@@ -1,0 +1,20 @@
+# if gsl header files are installed in /usr/local/include or /usr/include/ and gsl and gslcblas libraries are in /usr/local/lib or /usr/lib then do nothing
+
+PKG_CFLAGS = -D__useR__
+PKG_LIBS = -lgsl -lgslcblas  
+
+# if gsl header files are not on the search path, set the include path below, uncomment the line below, and 
+# comment the PKG_CFLAGS line above
+
+#PKG_CFLAGS = -D__useR__ -I/path/to/gsl_header_files/ 
+
+# if libgsl.so and libgslcblas.so are not on the current search path, set the library path below, uncomment the line 
+# below, and comment out the PGK_LIBS line above
+
+#PKG_LIBS = -L/path/to/libgsl -lgsl -lgslcblas  ## if you uncomment this line, comment the first line
+
+
+
+
+
+

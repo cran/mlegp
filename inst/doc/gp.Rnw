@@ -1,0 +1,77 @@
+% -*- mode: noweb; noweb-default-code-mode: R-mode; -*-
+
+%\VignetteIndexEntry{Gaussian process modeling background}
+%\VignetteKeywords{mlegp}
+%\VignetteDepends{mlegp}
+%\VignettePackage{mlegp}
+
+\section{Gaussian process modeling and diagnostics}
+\subsection{Gaussian processes}
+
+Let $z_{\mbox{\scriptsize known}}$ = $\left[z(\theta^{(1)}), \dots, z(\theta^{(m)})\right]$
+be a vector of {\it observed} responses, where $z(\theta^{(i)})$ is the response observed at the design point $\theta^{(i)}$, the parameter vector $\theta^{(i)} = \left[\theta^{(i)}_1, \ldots, \theta^{(i)}_p\right]$, 
+and we are interested in predicting output $z(\theta^{\mbox{\scriptsize (new)}})$ at the untried parameter setting $\theta^{\mbox{\scriptsize (new)}}$. The correlation between any two responses (observed or unobserved) is assumed to have the (prodcut exponential) form
+\begin{equation}
+C(\beta)_{i,j} \equiv \text{cor}\left(z(\theta^{(i)}), z(\theta^{(j)})\right) = \exp{\left\{\sum_{k=1}^{p}{\left(-\beta_k\left(\theta^{(i)}_k-\theta^{(j)}_k\right)^2\right)}\right\}}\label{eq:cor}.
+\end{equation}
+The correlation matrix C($\beta$) = [C($\beta)]_{i,j}$, and depends on the correlation parameters $\beta = \left[\beta_1, \dots, \beta_p\right]$ 
+
+Let $\mu(\cdot)$ be the mean function for the unconditional mean of any observation, and
+the mean matrix of $z_{\mbox{\scriptsize known}}$ be
+\begin{equation}\label{eq:M}
+M \equiv \left[\mu\left(\theta^{(1)}\right), \ldots, \mu\left(\theta^{(m)}\right)\right].
+\end{equation}
+The vector of observed responses, $z_{\mbox{\scriptsize known}}$, is distributed according to
+\begin{equation}
+z_{\mbox{\scriptsize known}} \sim MVN_{_m}(M, \sigma^2_{GP}C(\beta)+ \sigma^2_eI),
+\label{eq:mvn}
+\end{equation}
+where $I$ is a $k$ x $k$ identity matrix, $\sigma^2_{GP}$ is the unconditional variance of an expected response and $\sigma^2_e$, the nugget term, is variance due to the stochasticity of the response (e.g., random noise). 
+For convenience, denote the variance-covariance matrix of $z_{\mbox{\scriptsize known}}$ as
+\begin{equation}
+V \equiv \sigma^2_{GP}C(\beta) + \sigma^2_eI\label{eq:Vknown}
+\end{equation}
+Also define $r_i =$ cor$(z(\theta^{(new)}), z(\theta^{(i)}))$, following equation (\ref{eq:cor}), and $r = \left[r_1, \dots, r_m\right]$. Under the GP assumption, the predictive distribution of $z(\theta^{(new)})$ is normal with mean
+\begin{equation}\label{eq:pred}
+E[z(\theta^{(new)})|z_{\mbox{\scriptsize known}}] = \mu(\theta^{(new)}) + \sigma^2_{GP}r'V(z_{\mbox{\scriptsize known}}-M)
+\end{equation}
+and variance
+%\begin{equation*}
+\[Var[z(\theta^{(new)})|z_{\mbox{\scriptsize known}}] = \sigma^2_{\mbox{\scriptsize GP}} + \sigma^2_e - \sigma^4_{GP}r'Vr.\]
+%\end{equation*}
+For more details, see \citet{Santner2003}.
+
+\subsection{Maximum likelihood estimation}
+We first need some additional notation. Mean functions that are constant or linear in design parameters have the form $\mu(\theta) = x(\theta)F$, where $x(\theta)$ is a row vector of regression parameters, and $F$ is a column vector of regression coefficients. Note that for a constant mean function, $x(\cdot)$ $\equiv$ 1 and $F$ is a single value corresponding to the constant mean. The mean matrix $M$ defined in equation (\ref{eq:M}) has the form $M = XF$, where the $i^{\text{th}}$ row of $X$ is equal to $x(\theta^{(i)})$. 
+
+Let us also rewrite the variance-covariance matrix V from equation (\ref{eq:Vknown}) to be
+\begin{equation}
+V \equiv \sigma^2_{\mbox{\scriptsize GP}}(C(\beta) + \sigma^2_{e*}I) \equiv \sigma^2_{\mbox{\scriptsize GP}}W(\beta, \sigma^2_{e*}),
+\end{equation}
+where $\sigma^2_{e*} = \sigma^2_e / \sigma^2_{\mbox{\scriptsize GP}}$, and the matrix $W$ depends on the correlation parameters $\beta = \left[\beta_1, \dots, \beta_p\right]$ and the scaled nugget term $\sigma^2_{e*}$.
+
+When the matrix $W$ is fully specified, maximum likelihood estimates of the mean regression parameters and $\sigma^2_{\mbox{\scriptsize GP}}$ exist in closed form and are
+
+\begin{equation}\label{eq:Fhat}
+\hat{F} = (X^TW^{-1}X)^{-1}X^{T}W^{-1}z_{\mbox{\scriptsize known}}
+\end{equation}
+and
+\begin{equation}\label{eq:sig2hat}
+\hat{\sigma}^2_{\mbox{\scriptsize GP}} = \frac{1}{m} 
+(z_{\mbox{\scriptsize known}} - \hat{M})^TW^{-1}
+(z_{\mbox{\scriptsize known}} - \hat{M}),
+\end{equation}
+where $\hat{M} = X\hat{F}$.
+
+The package {\it mlegp} uses numerical methods in conjunction with equations (\ref{eq:Fhat}) and (\ref{eq:sig2hat}) to find maximum likelihood estimates of all GP parameters.
+
+\subsection{Diagnostics}\label{sec:diag}
+The cross-validated prediction $z_{\mbox{-}i}(\theta^{(i)})$ is the predicted response obtained using equation (\ref{eq:pred}) after removing all responses at design point $\theta^{(i)}$ from $z_{\mbox{\scriptsize known}}$. Note that it is possible for multiple $\theta^{(i)}$'s, for various $i$'s, to be identical, in which case all corresponding observations are removed. The cross-validated residual for this observations is \begin{equation}
+\frac{z(\theta^{(i)}) - z_{\mbox{-}i}(\theta^{(i)})}
+{\mbox{se}(z_{\mbox{-}i}(\theta^{(i)})},
+\end{equation} 
+where se$(z_{-i}(\theta^{(i)}))$ is the standard error of $z_{\mbox{-}i}(\theta^{(i)})$
+
+\subsection{What does {\it mlegp} do?}\label{sec:mlegp}
+The package {\it mlegp} extends the Gaussian process model of (\ref{eq:mvn}) by allowing the user to replace the identity matrix $I$ in equations (\ref{eq:mvn}) and (\ref{eq:Vknown}) with a diagonal matrix $N$, thereby specifying the {\it nugget matrix} up to a multiplicative constant. This extension provides some flexibility for modeling heteroscedastic responses. The user also has the option of fitting a GP with a constant mean (i.e., $\mu(\theta) \equiv \mu_0$ ) or mean functions that are linear regression functions in all elements of $\theta$ (plus an intercept term). For multi-dimensional output,  the user has the option of fitting independent GPs to each dimension (i.e., each type of observation), or to the most important principle component weights following singular value decomposition. The latter is ideal for data rich situations, such as functional output, and is explained further in Section (\ref{sec:SVD}). GP accuracy is analyzed through diagnostic plots of cross-validated predictions and cross-validated residuals, which  were described in Section (\ref{sec:diag}). Sensitivity analysis tools including FANOVA decomposition, and plotting of main and two-way factor interactions are described in Section (\ref{sec:SA}).
+
