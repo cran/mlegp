@@ -31,13 +31,13 @@ For convenience, denote the variance-covariance matrix of $z_{\mbox{\scriptsize 
 \begin{equation}
 V \equiv \sigma^2_{GP}C(\beta) + \sigma^2_eI\label{eq:Vknown}
 \end{equation}
-Also define $r_i =$ cor$(z(\theta^{(new)}), z(\theta^{(i)}))$, following equation (\ref{eq:cor}), and $r = \left[r_1, \dots, r_m\right]$. Under the GP assumption, the predictive distribution of $z(\theta^{(new)})$ is normal with mean
+Also define $r_i =$ cor$(z(\theta^{(new)}), z(\theta^{(i)}))$, following equation (\ref{eq:cor}), and $r = \left[r_1, \dots, r_m\right]'$. Under the GP assumption, the predictive distribution of $z(\theta^{(new)})$ is normal with mean
 \begin{equation}\label{eq:pred}
-E[z(\theta^{(new)})|z_{\mbox{\scriptsize known}}] = \mu(\theta^{(new)}) + \sigma^2_{GP}r'V(z_{\mbox{\scriptsize known}}-M)
+E[z(\theta^{(new)})|z_{\mbox{\scriptsize known}}] = \mu(\theta^{(new)}) + \sigma^2_{GP}r'V^{-1}(z_{\mbox{\scriptsize known}}-M)
 \end{equation}
 and variance
 %\begin{equation*}
-\[Var[z(\theta^{(new)})|z_{\mbox{\scriptsize known}}] = \sigma^2_{\mbox{\scriptsize GP}} + \sigma^2_e - \sigma^4_{GP}r'Vr.\]
+\[Var[z(\theta^{(new)})|z_{\mbox{\scriptsize known}}] = \sigma^2_{\mbox{\scriptsize GP}} + \sigma^2_e - \sigma^4_{GP}r'V^{-1}r.\]
 %\end{equation*}
 For more details, see \citet{Santner2003}.
 

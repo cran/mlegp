@@ -1,8 +1,11 @@
 
+## if necessary, set environment variable LIB_GSL, or replace LIB_GSL below with /path/to/gsl 
+## (e.g. "C:\Program Files\GnuWin32" 
 
-## if necessary, change "C:\Program Files\GnuWin32\include" to the directory where the gsl include files are
-PKG_CFLAGS = -D__useR__ -DGSL_DLL -I"C:\Program Files\GnuWin32\include" 
+PKG_CFLAGS = -D__useR__ -I$(LIB_GSL)/include 
 
 ## if necessary, change "C:\Program Files\GnuWin32\bin" to the directory where libgsl.dll and libgslcblas.dll are
-PKG_LIBS =  -DGSL_DLL -L"C:\Program Files\GnuWin32\bin" -lgsl -lgslcblas
+PKG_LIBS =  -L$(LIB_GSL)/bin -lgsl -lgslcblas 
+
+
 

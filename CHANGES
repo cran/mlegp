@@ -1,0 +1,6 @@
+
+1.1 (10/6/2007)
+
+Windows binary now available. However, user will have to download gsl and gslcblas dlls and put them on the path for mlegp to load
+
+
