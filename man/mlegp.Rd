@@ -6,16 +6,15 @@
   Finds maximum likelihood estimates of Gaussian process parameters for a vector (or matrix) of one (or more) responses. For multiple responses, the user chooses between fitting independent Gaussian processes to the separate responses or fitting independent Gaussian processes to principle component weights obtained through singular value decomposition of the output. The latter is useful for functional output or data rich situations. 
 }
 \usage{
-mlegp(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NULL, 
+mlegp(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NULL, gp.names = NULL, 
 	PC.UD = NULL, PC.num = NULL, PC.percent = NULL, 
-	simplex.ntries = 5, simplex.maxiter = 100, simplex.breaksize = 1e-10, simplex.stepsize = NULL, 
-	BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, BFGS.stepsize = 0.001, 
-	seed = 0, verbose = 1)
+	simplex.ntries = 5, simplex.maxiter = 100, simplex.abstol = 1e-16, simplex.reltol = 1e-8,  
+	BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, seed = 0, verbose = 1)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{X}{ the design matrix }
-  \item{Z}{ vector or matrix of observations; corresponding to the rows of \code{X}}
+  \item{Z}{ vector or matrix of observations; corresponding to the rows of \code{X} }
   \item{constantMean}{ a value of 1 indicates that each Gaussian process will have a constant mean; otherwise the mean function will be a linear regression in \code{X}, plus an intercept term }
   \item{nugget}{ a positive number indicating an initial estimate for the nugget term, or a vector corresponding to the diagonal nugget matrix up to a multiplicative constant. If \code{NULL} (the default), \code{mlegp} estimates a nugget term only there are replicates in the design matrix }
   \item{min.nugget}{ minimum value of the nugget term; 0 by default }
@@ -26,12 +25,11 @@ mlegp(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NULL,
   \item{PC.percent}{ if not \code{NULL} the number of principle component weights kept is the minimum number that accounts for \code{PC.percent} of the total variance of the matrix \code{Z} }
   \item{simplex.ntries}{ the number of simplexes to run }
   \item{simplex.maxiter}{ maximum number of iterations / simplex }
-  \item{simplex.breaksize}{ stopping criteria for simplex method is when the average distance from the center of the simplex is less than \code{simplex.breaksize} }
-  \item{simplex.stepsize}{ initial step size for simplex method; length must be equal to number of columns of X }
+  \item{simplex.abstol}{ absolute tolerance for simplex method, defaulting to 1e-8 }
+  \item{simplex.reltol}{ relative tolerance for simplex method, defaulting to 1e-16 }
   \item{BFGS.maxiter}{ maximum number of iterations for BFGS method }
-  \item{BFGS.tol}{ stopping condition for BFGS method is when the dot product of the gradient vector < \code{BFGS.tol}  }
-%  \item{BFGS.h}{ derivatives are approximated as \[f(x+BFGS.h) - f(x)\] / BFGS.h)  }
-  \item{BFGS.stepsize}{ initial step size for BFGS method }
+  \item{BFGS.tol}{ stopping condition for BFGS method is when norm(gradient) < BFGS.tol * max(1, norm(x)), where x is the parameter vector and norm is the Euclidian norm }
+  \item{BFGS.h}{ derivatives are approximated as [f(x+BFGS.h) - f(x)] / BFGS.h)  }
   \item{seed}{ the random number seed }
   \item{verbose}{ a value of '1' or '2' will result in status updates being printed; a value of '2' results in more information }
 }

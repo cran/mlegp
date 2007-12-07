@@ -29,155 +29,160 @@ gp.h - finds mles of gaussian process parameters that have closed form
 #ifndef __GP__
 #define __GP__
 
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_statistics.h>
-#include <gsl/gsl_math.h>
+#include <math.h>
+#include <float.h>
+#include "matrix_vector.h"
+
+#ifndef M_LNPI
+#define M_LNPI 1.1447298858494
+#endif
+
+#ifndef M_LN2
+#define M_LN2 0.693147180559945309417
+#endif
 
 /*********************************************************************************
-calcBhat - finds the mle of the mean regression term X'B of the gaussian process;
-	gsl_matrix *X - the design matrix for the regression term X'B
-	gsl_matrix *Vinv - the inverse variance-covariance matrix specified up to
+calcBhat - finds the mle of the mean regression term X'B of the gaussian process
+	double *X - the design matrix for the regression term X'B
+	int nrowX - number of rows of X (same as # of observations and length 
+			width of Vinv) 
+	int ncolX - number of columns of X
+	double *Vinv - the inverse variance-covariance matrix specified up to
 			   a multiplicative constant
-	gsl_matrix *Y - the observations    
-	gsl_matrix *bhat - matrix (with size2 = 1) that stores the mle of B
+	const double *Y - the observations    
+	double *bhat - vector that stores the mle of B (that has length ncolX)
 	
 	return value: 1 if there is an error inverting X'X; 0 otherwise
 
 	notes: X is for the mean regression function, not the design matrix for 
 		comp model runs
 **********************************************************************************/
-int calcBhat(gsl_matrix *X, gsl_matrix *Vinv, gsl_matrix *Y, gsl_matrix *bhat) {
+int calcBhat(const double *X, const int nrowX, const int ncolX, const double *Vinv,  
+	     const double *Y, double *bhat) {
 
-	gsl_matrix *Xprime = gsl_matrix_alloc(X->size2, X->size1);
-	transpose(X, Xprime);
+	double *Xprime = MATRIX(nrowX, ncolX);
+	transpose(X, Xprime, nrowX, ncolX);
 
-	gsl_matrix *XprimeVinv = gsl_matrix_alloc(Xprime->size1, Vinv->size2);
+	double *XprimeVinv = MATRIX(ncolX, nrowX);   // ncolX is nrow of Xprime
+	matrix_multiply(Xprime, ncolX, nrowX, Vinv, nrowX, XprimeVinv);
 
-	matrix_multiply(Xprime, Vinv, XprimeVinv);
+	double *XprimeVinvX = MATRIX(ncolX, ncolX);
 
-	gsl_matrix *XprimeVinvX = gsl_matrix_alloc(Xprime->size1, X->size2);
-	matrix_multiply(XprimeVinv, X, XprimeVinvX);	
+	matrix_multiply(XprimeVinv, ncolX, nrowX, X, ncolX, XprimeVinvX);	
 
-	gsl_matrix *ans1 = gsl_matrix_alloc(XprimeVinvX->size1, XprimeVinvX->size2);
-	if (solve(XprimeVinvX, ans1) == 1) {
+	double *ans1 = MATRIX(ncolX, ncolX);
+	createIdentityMatrix(ans1, ncolX);
+
+	int *piv = malloc(ncolX*sizeof (int));
+	int info = LP_gen_solve(XprimeVinvX, ncolX, ans1, ncolX, piv);
+	if (info != 0) {
+		FREE_MATRIX(Xprime);
+		FREE_MATRIX(XprimeVinv);
+		FREE_MATRIX(ans1);
+		free(piv);
 		return 1;
 	}
 
-	gsl_matrix *ans2 = gsl_matrix_alloc(XprimeVinvX->size1, Y->size2);
-	matrix_multiply(XprimeVinv,Y, ans2);
+	double *ans2 = MATRIX(ncolX, 1);
+	matrix_multiply(XprimeVinv,ncolX, nrowX, Y, 1, ans2);
+	matrix_multiply(ans1, ncolX, ncolX, ans2, 1, bhat);
 
-	matrix_multiply(ans1, ans2, bhat);
-
-	gsl_matrix_free(Xprime);
-	gsl_matrix_free(XprimeVinv);
-	gsl_matrix_free(XprimeVinvX);
-	
-	gsl_matrix_free(ans1);
-	gsl_matrix_free(ans2);
+	free(piv);
+	FREE_MATRIX(Xprime);
+	FREE_MATRIX(XprimeVinv);
+	FREE_MATRIX(XprimeVinvX);
+	FREE_MATRIX(ans1);
+	FREE_MATRIX(ans2);
 	return 0;
 }
 
 
-/*********************************************************************************
+/**************************************************************************************
 calcMLEsig2 - finds the mle of the overall variance of the GP;
-	gsl_matrix *Y - the observations   
-	gsl_matrix *mu - mean matrix with same dimensions as Y 
-	gsl_matrix *Vinv - the inverse variance-covariance matrix specified up to
-			   a multiplicative constant
+	const double *Y - the observations   
+	const double *mu - mean matrix with same dimensions as Y 
+	const double *Vinv - the inverse variance-covariance matrix to mult. constant
 	return value: the mle of sig2
-********************************************************************************/
-double calcMLESig2 (gsl_matrix *Y, gsl_matrix *mu, gsl_matrix *Vinv) {
+**************************************************************************************/
 
-	gsl_matrix *diff   = gsl_matrix_alloc(Y->size1, 1);
-	gsl_matrix *diff_t = gsl_matrix_alloc(1,Y->size1);
-	gsl_matrix_memcpy(diff, Y);
-	gsl_matrix_sub(diff, mu);
-	transpose(diff, diff_t);
+double calcMLESig2 (const double *Y, const double *mu, const double *Vinv, int n) {
 
-	gsl_matrix *diff_tinvV = gsl_matrix_alloc(diff_t->size1, Vinv->size2);
-	matrix_multiply(diff_t, Vinv, diff_tinvV);
+	double *diff = VECTOR(n);
+	vectorCopy(Y, diff, n);
+	vectorSubtract(diff,mu, n);	// Y - mu
+
+	double *diffVinv = MATRIX(1,n);
+	xprimeA(diff, Vinv, diffVinv, n,n);
 	
-	gsl_matrix *ans = gsl_matrix_alloc(1, 1);
-	matrix_multiply(diff_tinvV, diff, ans);
-
-	double sig2 = ans->data[0] / (double)Y->size1;
-	gsl_matrix_free(diff);
-	gsl_matrix_free(diff_t);
-	gsl_matrix_free(diff_tinvV);
-	gsl_matrix_free(ans);
+	double sig2 = dotprod(diffVinv, diff,n) / (double) n;
+		
+	FREE_VECTOR(diff);
+	FREE_MATRIX(diffVinv);	
 	return sig2;
 }
 
-/*********************************************************************************
-addNugget - adds a constant nugget term to the diagnal of the matrix m 
-  	    Note: (this assumes m is a square matrix)
-*********************************************************************************/
-void addNugget(gsl_matrix *m, double nugget) {
-	int i;
-	for (i = 0; i < m->size1; i++) {
-		m->data[i*m->tda + i] += nugget;			
+/******************************************************************************************
+addNugget - adds a constant nugget term to the diagonal of the packed matrix m that is nxn 
+******************************************************************************************/
+void addNuggetToPackedMatrix(double *m, double nugget, int n) {
+	int i = 0;
+	while (n > 0) {
+		m[i] += nugget;
+		i+= n;
+		n--;
 	}
 }
 
 
-/*********************************************************************************
-addNuggetMatrix - adds diag(nugget matrix) the matrix m
-*********************************************************************************/
-void addNuggetMatrix(gsl_matrix *m, double c, double *nugget_matrix) {
-	int i;
-	for (i = 0; i < m->size1; i++) {
-		m->data[i*m->tda + i] += c * nugget_matrix[i];			
+/*********************************************************************************************
+addNuggetMatrix - adds c * diag(nugget matrix) to the packed matrix m that is nxn
+**********************************************************************************************/
+void addNuggetMatrixToPackedMatrix(double *m, double c, const double *nugget_matrix, int n) {
+	int count = 0;
+	int i = 0;
+	while (n > 0) {
+		m[i] += c*nugget_matrix[count];
+		i+= n; count++;	n--;
 	}
 }
 
 
 
 /*********************************************************************************
-logdmvnorm - calculates and returns the log likelihood of observations x given 
+logdmvnorm - calculates and returns the log likelihood of observations y given 
 	mean matrix mu and var-cov matrix V; -DBL_MAX is returned if the var-cov
 	matrix is singular
 
-	note: matrices x and V will be overwritten
+	V should be in PACKED FORM
+
+	note: matrices y and V will be overwritten
+	may want to pass in invV if we have it already
 *********************************************************************************/
-double logdmvnorm(gsl_vector *x, gsl_vector *mu, gsl_matrix *V) {
+double logdmvnorm(double *y, const double *mu, double *V, int n) {
 
-	int i;
-	gsl_set_error_handler_off();
+	int info = 0;
 
-	i = gsl_linalg_cholesky_decomp(V);      
-	gsl_set_error_handler(NULL);
+	double *invV = MATRIX(n,n);
+	createIdentityMatrix(invV,n);
 
-	if (i == 1) { // singular matrix!
-		return -DBL_MAX;	
+	info = LP_sym_pos_solve(V, n, invV, n);  
+	if (info != 0) {        // V is singular
+		FREE_MATRIX(invV);
+		return -DBL_MAX;
 	}
+	// now invV is inverse of V; V contains cholesky decomp
 
-	double logdet = logDetFromCholesky(V);
+	double logdet = logDetFromCholesky(V,n);
+	double *ans = VECTOR(n);
+	vectorSubtract(y, mu, n);  // y is now = y - mu	
 
-	gsl_vector *I = gsl_vector_alloc(V->size1); // identity vector (b)
-	gsl_vector *inv = gsl_vector_alloc(V->size1); // (x)
+	xprimeA(y, invV, ans, n,n); // ans = (y-mu)' %*% invV
+
+	double d = dotprod(ans, y, n);  
 	
-	gsl_matrix *invV = gsl_matrix_alloc(V->size1,V->size1);
-	for (i = 0; i < V->size1; i++) {
-		gsl_vector_set_zero(I);
-		I->data[i] = 1;
-		gsl_linalg_cholesky_solve(V, I, inv);
-		assignColumn(invV, inv, i);
-	}
-
-	gsl_vector *ans = gsl_vector_alloc(x->size);
-	
-	gsl_vector_sub(x, mu);  // x now = x - mu	
-	xprimeA(x, invV, ans);  // ans = (x-mu)' %*% invV
-
-	double d = dotprod(ans, x);  
-
-	// free memory
-	gsl_vector_free(I);
-	gsl_vector_free(inv);
-	gsl_matrix_free(invV);
-	gsl_vector_free(ans);
-	return	-(x->size / 2.0) * (M_LN2 + M_LNPI) - 0.5* (logdet + d);
+	FREE_MATRIX(invV);
+	FREE_VECTOR(ans);
+	return	-(n / 2.0) * (M_LN2 + M_LNPI) - 0.5* (logdet + d);
 }
 
 
@@ -185,36 +190,28 @@ double logdmvnorm(gsl_vector *x, gsl_vector *mu, gsl_matrix *V) {
 /*********************************************************************************
 createCorrMatrix - creates the correlation matrix for design X where
 
-	corr(z(xi), z(xj)) = exp[sum(-B(x,p - xj,p')**2)], p = 1,2,..,# of inputs
+	corr(z(xi), z(xj)) = exp[sum(-B(xi,p - xj,p)**2)], p = 1,2,..,k
 	
-	The correlation matrix is returned in corr, which should be the 
-		appropriate size when passed in
+	The correlation matrix is returned in corr, which must be in packed form 
 *********************************************************************************/
-void createCorrMatrix(gsl_matrix *X, gsl_vector *B, gsl_matrix *corr) {
+void createCorrMatrix(const double *X, const double *B, double *corr, int n, int k) {
 
-	int i, j, p;
-	gsl_matrix_set_all(corr, 0.0);	
+	int i, j, p, count = 0;
+	zeroPackedMatrix(corr, n);
 	double diff;
 	double total;
-
-	for (i = 0; i < X->size1; i++) {
-	  for(j = i+1; j < X->size1; j++) {
+	for (i = 0; i < n; i++) {
+	  for(j = i; j < n; j++) {
 		diff = total = 0.0;
-		for (p = 0; p < B->size; p++) {
-
-			diff = (X->data[i*X->tda + p] - X->data[j*X->tda+p]);
-			total += -B->data[p]*diff*diff;
+		for (p = 0; p < k; p++) {
+			diff = X[i*k+p] - X[j*k+p];
+			total += -B[p]*diff*diff;
 		}
-		gsl_matrix_set(corr, i, j, exp(total));
-		gsl_matrix_set(corr, j, i, exp(total));
+		corr[count] = exp(total);
+		count++;
 	  }
 	}
-	for (i = 0; i < X->size1; i++) {
-		corr->data[i*corr->tda+i] = 1.0;
-	}
-
 }
 #endif
-
 
 

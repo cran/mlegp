@@ -19,21 +19,32 @@
 ****************************************************************************/
 
 /***************************************************************************
-matrix.h - provides several matrix and vector functions
+matrix.h - provides several matrix and vector functions, some of which use 
+	lapack and cblas
 ***************************************************************************/
 
 #ifndef __MATRIX_VECTOR__
 #define __MATRIX_VECTOR__
-
-
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_permutation.h>
-#include <gsl/gsl_linalg.h>
 #include <math.h>
 #include <stdio.h>
-
+#include <stdlib.h>
+//#include "array.h"
+#include "lapack_headers.h"
 #include "print.h"
+
+#define MATRIX(a,b) (double *) malloc((a)*(b)*sizeof(double))
+
+// stores symmetric matrix in packed format; must be used for inversion / det of var-cov matrix
+#define PACKED_MATRIX(n) (double *) malloc((n) * ((n) +1)/2 *sizeof(double))
+#define VECTOR(n) (double *) malloc((n)*sizeof(double))
+
+#define MATRIX_GET(m,i,j,ncol) m[(i)*(ncol)+(j)]
+#define MATRIX_SET(m,i,j,ncol,a) m[(i)*(ncol)+(j)] = (a)
+
+#define FREE_MATRIX(m) free(m) 
+#define FREE_VECTOR(v) free(v) 
+
+
 
 /************************************************************************
 createMatrixByRow -  
@@ -41,33 +52,30 @@ createMatrixByRow -
 	nrow - # of rows
 	ncol - # of columns
 	m - pointer to a matrix that will store the new matrix, 
-		with size1 = nrow and size2 = ncol
 ************************************************************************/
-void createMatrixByRow(double *d, int nrow, int ncol, gsl_matrix *m) {
+void createMatrixByRow(const double *d, int nrow, int ncol, double *m) {
 	int i, j;
 	int count = 0;
 	for (i = 0; i < nrow; i++) {
 		for (j = 0; j < ncol; j++) {
-			m->data[i*m->tda+j] = d[count];
+			m[i*ncol + j] = d[count];
 			count++;
 		}
 	}
 }
-
 /************************************************************************
 createMatrixByCol -  
 	d - array of elements in COLUMN order
 	nrow - # of rows
 	ncol - # of columns
 	m - pointer to a matrix that will store the final matrix, 
-		with size1 = nrow and size2 = ncol
 ************************************************************************/
-void createMatrixByCol(double *d, int nrow, int ncol, gsl_matrix *m) {
+void createMatrixByCol(const double *d, int nrow, int ncol, double *m) {
 	int i, j;
 	int count = 0;
-	for (j = 0; j < ncol; j++) {
-		for (i = 0; i < nrow; i++) {
-			m->data[i*m->tda+j] = d[count];
+	for (i = 0; i < ncol; i++) {
+		for (j = 0; j < nrow; j++) {
+			m[j*ncol + i] = d[count];
 			count++;
 		}
 	}
@@ -75,214 +83,294 @@ void createMatrixByCol(double *d, int nrow, int ncol, gsl_matrix *m) {
 
 
 /************************************************************************
-assignColumn - overwrites column 'col+1' of matrix 'm' with vector 'v', 
+createPackedMatrix -  
+	d - vector of elements to store in packed matrix format
+	n - # of rows/columns
+	m - pointer to a matrix that will store the final matrix 
 ************************************************************************/
-void assignColumn(gsl_matrix *m, const gsl_vector *v, int col) {
+void createPackedMatrix(const double *d, int n, double *m) {
 	int i;
-	for (i = 0; i < m->size1; i++) {
-		m->data[i*m->tda + col] = v->data[i];
+	for (i = 0; i < n*(n+1)/2; i++) {
+			m[i] = d[i];
 	}
 }
 
-/************************************************************************
-solveFromCholesky - stores the inverse of a matrix A based on its 
-	cholesky decomposition in the matrix ans
-	
-	gsl_matrix *cholesky - pointer to cholesky decomposition of A
-	gsl_matrix *ans - pointer to matrix that stores the inverse
-************************************************************************/
-void solveFromCholesky(gsl_matrix *cholesky, gsl_matrix *ans) {
-	// we solve Ax = b for all rows of A 
-	gsl_vector *I = gsl_vector_alloc(cholesky->size1); // identity vector (b)
-	gsl_vector *inv = gsl_vector_alloc(cholesky->size1); // (x)
+void zeroPackedMatrix(double *m, int n) {
 	int i;
-	for (i = 0; i < cholesky->size1; i++) {
-		gsl_vector_set_zero(I);
-		I->data[i] = 1;
-		gsl_linalg_cholesky_solve(cholesky, I, inv);
-		assignColumn(ans, inv, i);
+	for (i = 0; i < n*(n+1)/2; i++) {
+		m[i] = 0;
 	}
-	gsl_vector_free(I);
-	gsl_vector_free(inv);
+}
+
+void createIdentityMatrix(double *m, int n) {
+	int i,j;
+	for (i = 0; i < n; i++) {
+		for(j = 0; j< n; j++){
+			if (i == j) m[i*n+j] = 1;
+			else m[i*n+j] = 0;
+		}
+	}
+}
+
+// sets all elements of matrix m to value
+void setMatrix(double *m, const int n1, const int n2, double value) {
+	int i;
+	for (i=0; i < n1*n2;i++) {
+		m[i] = value;
+	}
+}
+
+// pack and unpack only for symmetric matrices
+void unpackMatrix(const double *a, double *b, int n) {
+	int i, j, count=0;
+	for (i = 0; i < n; i++) {
+		for (j = i; j < n; j++) {
+			b[i*n+j] = b[j*n+i] = a[count];
+			count++;	
+		}
+	}
+}
+// will contain upper right of matrix, from left to right
+void packMatrix(const double *a, double *b, int n) {
+	int i, j, count = 0; 
+	for (i = 0; i < n; i++) {
+		for (j = i; j < n; j++) {
+			b[count] =  a[i*n+j];
+			count++;
+		}
+	}
+}
+
+// copy packed matrix m1 to packed matrix m2
+void copyPackedMatrix(const double *m1, double *m2, int n) {
+		int i;
+		for (i = 0; i < n*(n+1)/2; i++) {
+			m2[i] = m1[i];
+		}
+}
+
+void copyVector(const double *v1, double *v2, int n) {
+	int i;
+	for (i = 0; i < n; i++) {
+		v2[i] = v1[i];
+	}
 }
 
 /*************************************************************************
-solve - stores the inverse of a matrix V in the matrix ans
-	gsl_matrix *V - pointer to matrix to invert
-	gsl_matrix *ans - will store inverse of V; must be same size as V
+LP_sym_pos_solve - solves AX=B for a packed (symmetric) matrix A
+	A - pointer to a PACKED matrix
+	B - a (unpacked) matrix to store the final answer
+	n - number of rows/columns of a  
+	nrhs - number of columns of b
 
-	returns 1 if V cannot be inverted; (probably) 0 otherwise
+	returns 1 if A cannot be inverted; (probably) 0 otherwise
 *************************************************************************/
-int solve(gsl_matrix *V, gsl_matrix *ans) {
-
-	gsl_set_error_handler_off();
-	gsl_matrix *V_copy = gsl_matrix_alloc(V->size1, V->size2);
-	gsl_matrix_memcpy(V_copy, V);
-	int i = gsl_linalg_cholesky_decomp(V_copy);
-	gsl_set_error_handler(NULL);
-	if (i == 1) return i;
-	solveFromCholesky(V_copy, ans);
-	gsl_matrix_free(V_copy);
-	return i;
-
+int LP_sym_pos_solve(double *A, int n, double *B, int nrhs)
+{
+	char uplo = 'L'; // L
+	int info;
+	dppsv_(&uplo, &n, &nrhs, A, B, &n, &info);
+	return info;
 }
 
-// converts matrix to vector, row by row
-void toVector(gsl_matrix *m, gsl_vector *v) {
-	int i, j, count;
-	count = 0;
-	for (i = 0; i < m->size1; i++) {
-		for (j = 0; j < m->size2; j++) {
-			v->data[count] = m->data[i*m->tda + j];
-			count++;
-		}
-	}
+
+/* C front end to LAPACK's DGESV routine.
+ * Computes the solution of Ax=B, where A is an arbitrary real nxn matrix.
+ * The auxiliary vector piv returns the pivoting row exchange data.
+ * */
+int LP_gen_solve(double *A, int n, double *B, int nrhs, int *piv)
+{
+	int info;
+	dgesv_(&n, &nrhs, A, &n, piv, B, &n, &info);
+	return info;
 }
 
-/****************************************************************************************
-detFromCholesky - returns the determinant of matrix A given its cholesky decomposition
-****************************************************************************************/
-double detFromCholesky(gsl_matrix *ch) {
-	double ans = 1.0;
-	int i = 0;
-	for (i = 0; i < ch->size1; i++) {
-		ans *= ch->data[i*ch->tda + i];
-	}
-	return ans*ans;
-}
+
+
 
 /*********************************************************************************************
-logDetFromCholesky - returns the log determinant of matrix A given its cholesky decomposition
+logDetFromCholesky - returns the log determinant of an nxn matrix given its cholesky 
+                     decomposition m 
 *********************************************************************************************/
-double logDetFromCholesky(gsl_matrix *ch) {
-	double ans = 0.0;
+double logDetFromCholesky(const double *m, int n) {
+	double log_det = 0.0;
 	int i = 0;
-	for (i = 0; i < ch->size1; i++) {
-		ans += log(ch->data[i*ch->tda + i]);
+	while (n > 0) {
+		log_det += log(m[i]);
+		i+= n;
+		n--;
 	}
-	return 2.0*ans;
+	log_det *= 2;
+	return (log_det);
 }
+
+
 
 
 /*********************************************************************************************
 matrix_multiply - stores A%*%B in the matrix ans
 *********************************************************************************************/
-void matrix_multiply(gsl_matrix *A, gsl_matrix *B, gsl_matrix *ans) {
-
-	if (A->size2 != B->size1) {
-		printerr("ERROR: matrices are not compatible for matrix multiplication!\n");
-		abort();
-	}
+void matrix_multiply(const double *A, int nrowA, int ncolA, const double *B, int ncolB, double *ans) {
 	int i, j, p;
 	double total;
-	for (i = 0; i < A->size1; i++) {
-		for (j = 0; j < B->size2; j++) {
+	for (i = 0; i < nrowA; i++) {
+		for (j = 0; j < ncolB; j++) {
 			total = 0.0000;
-			for (p = 0; p < A->size2; p++) {
-				total += A->data[i*A->tda+p] * B->data[p*B->tda + j];
+			for (p = 0; p < ncolA; p++) {
+				total += A[i*ncolA+p] * B[p*ncolB + j];
 			}
-			ans->data[i*ans->tda + j] = total;
+			ans[i*ncolB + j] = total;
 		}
 	}
 }
+
+// multiplies all elements of unpacked nxn matrix m by c
+void unpacked_matrix_scale(double *m, const double c, const int n) {
+	int i;
+	for (i = 0; i < n*(n+1)/2; i++) {
+		m[i] *= c;
+	}
+}
+
+
 
 /***********************************************************************
 cbind - implementation of cbind from R; stores the matrix {X1 X2} in A
 ***********************************************************************/
-void cbind(gsl_matrix *X1, gsl_matrix *X2, gsl_matrix *A) {
+void cbind(const double *X1, const double *X2, double *A, int ncolX1, int ncolX2, int nrowA) {
 	int i;
 	int j;
-	int end = X1->size2 + X2->size2;
+	int ncolA = ncolX1 + ncolX2;
 
-	for (i = 0; i < A->size1; i++) {
-		for (j = 0; j < X1->size2; j++) {
-			A->data[i*A->tda+j] = X1->data[i*X1->tda+j];
+	for (i = 0; i < nrowA; i++) {
+		for (j = 0; j < ncolX1; j++) {
+			MATRIX_SET(A,i,j,ncolA,  MATRIX_GET(X1,i,j,ncolX1));
+
 		}
-		for (j = X1->size2; j< end; j++) {
-			A->data[i*A->tda+j] = X2->data[i*X2->tda+j-X1->size2];
+		for (j = 0; j< ncolX2; j++) {
+			MATRIX_SET(A,i,j+ncolX1,ncolA, MATRIX_GET(X2,i,j,ncolX2));
 		}
 	}
 
 }
+
 
 
 /********************************************************
 transpose - stores transpose of matrix A in Aprime 
 ********************************************************/
-void transpose(gsl_matrix *A, gsl_matrix *Aprime) {
+void transpose(const double *A, double *Aprime, int nrowA, int ncolA) {
 	int i, j;
-	for (i = 0; i < A->size1; i++) {
-		for (j = 0; j < A->size2; j++) {
-			Aprime->data[j*Aprime->tda + i] = A->data[i*A->tda+j];			
+	for (i = 0; i < nrowA; i++) {
+		for (j = 0; j < ncolA; j++) {
+			MATRIX_SET(Aprime, j,i,nrowA, MATRIX_GET(A,i,j,ncolA));
 		}
 	}
 }
 
-/*****************************************************************
-printMatrix - prints line # 'line' of matrix m, or entire matrix
-		if 'line' = 0
-*****************************************************************/
-void printMatrix(gsl_matrix *m, int line) {
-  int i = 0;
-  int j = 0;
-  if (line != 0) { 
-	for (j = 0; j < m->size2; j++) {
-		printout("%f ", m->data[(line-1)*m->tda + j]);
-	}
-	printout("\n");
-	return;
-  }
-   for (i = 0; i < m->size1; i++) {
-	for (j = 0; j < m->size2; j++) {
-		printout("%f ", m->data[i*m->tda + j]);
-	}
-	printout("\n");
-  }
-
-}
-
-
-/*****************************************************************
-printVector - prints all elements of vector v to 1 row of output
-*****************************************************************/
-void printVector(gsl_vector *v) {
+// calculates v1 - v2 and stores results in v1
+void vectorSubtract(double *v1, const double *v2, int n) {
 	int i;
-	for (i = 0; i < v->size; i++) {
-		printout("%f ", v->data[i]);
+	for (i = 0; i < n; i++) {
+		v1[i] = v1[i] - v2[i];
 	}
-	printout("\n");
 }
+// copies vector v1 to vector v2
+void vectorCopy(const double *v1, double *v2, const int n) {
+	int i;
+	for (i = 0; i < n; i++) {
+		v2[i]=v1[i];
+	}
+}
+// calculates the sample variance of the first n elements in v
+double vectorVariance(const double *v, const int n) {
+	int i;
+	double mean = 0.0;
+	for (i = 0; i < n; i++) {
+		mean += v[i];
+	}
+	mean = mean / n;
+	
+	double sse = 0.0;
+	double dev;
+	for (i = 0; i < n; i++) {
+		dev = v[i] - mean;
+		sse += (dev*dev);
+	}
+	return sse / (double) (n-1);
+}
+
+/*****************************************************************
+printMatrix
+*****************************************************************/
+static void printMatrix(const char *fmt, const double *a, int nrow, int ncol, char *header)
+{
+	if (header != NULL) printout("%s\n", header);
+	int i, j;
+	for (i=0; i<nrow; i++) {
+		for (j=0; j<ncol; j++)
+		//	printout(fmt, a[i+n*j]);
+			printout(fmt, a[i*ncol+j]);
+		putchar('\n');
+	}
+}
+/*****************************************************************************************
+print_packed_matrix - for symmetric matrices where only lower (upper) triangle is stored
+******************************************************************************************/
+static void printPackedMatrix(const char *fmt, const double *a, int n)
+{
+	int i, j;
+	for (i=0; i<n; i++) {
+		for (j=0; j<=i; j++)
+			printout(fmt, a[i+(j*(2*n-j-1))/2]);
+		putchar('\n');
+	}
+}
+
+
+/*************************************************************************
+printVector - prints the first m elements of vector v to 1 row of output
+*************************************************************************/
+static void printVector(const char *fmt, const double *b, int m)
+{
+	int i;
+	for (i=0; i<m; i++)
+		printout(fmt, b[i]);
+	putchar('\n');
+}
+
+
 
 
 /***********************************************************************
 xprimeA - stores the matrix x'A in the vector ans
-	  gsl_vector *x - pointer to vector of length n
-	  gsl_matrix *A - pointer to matrix of length n,m
-	  gsl_vector *ans - stores the answer; must be length m
+	  double *x - pointer to vector of length n (1xn matrix)
+	  double *A - pointer to an nxm matrix 
+	  double *ans - pointer to vector of length m which stores the answer
+	  int nrowA - number of rows of A
+	  int ncolsA - number of columns of A
 ***********************************************************************/
-void xprimeA(gsl_vector *x, gsl_matrix *A, gsl_vector *ans) {
+void xprimeA(const double *x, const double *A, double *ans, int nrowA, int ncolA) {
 	int i,j;
 	double total = 0.0;
-	for (j = 0; j < A->size2; j++) {
+	for (j = 0; j < ncolA; j++) {
 		total = 0.0;
-		for (i = 0; i < A->size1; i++) {
-			 total += A->data[i*A->tda+j]*x->data[i];
+		for (i = 0; i < nrowA; i++) {
+			 total += MATRIX_GET(A,i,j,ncolA) * x[i];
 		}
-		ans->data[j] = total;
+		ans[j] = total;
 	}
 }
 
 
 /**************************************************************************
-dotprod - calculates and returns the dot product of vectors v1 and v2; 
-	v1 will be overwritten
+dotprod - calculates and returns the dot product of vectors v1 and v2 
 **************************************************************************/
-double dotprod(gsl_vector *v1, gsl_vector *v2) {
+double dotprod(const double *v1, const double *v2, int n) {
 	int i;
 	double total = 0.0;
-	gsl_vector_mul(v1, v2);
-	for (i = 0; i < v1->size; i++) {
-		total += v1->data[i];
+	for (i = 0; i < n; i++) {
+		total += v1[i]*v2[i];
 	}
 	return total;
 }

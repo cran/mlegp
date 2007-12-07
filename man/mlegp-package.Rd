@@ -11,8 +11,8 @@ Maximum likelihood Gaussian process modeling for univariate and multi-dimensiona
 \tabular{ll}{
 Package: \tab mlegp\cr
 Type: \tab Package\cr
-Version: \tab 1.0\cr
-Date: \tab 2007-09-27\cr
+Version: \tab 2.0\cr
+Date: \tab 2007-12-05\cr
 License: \tab Gnu General Public License (Version 3)\cr
 }
 

@@ -2,7 +2,6 @@
 
 %\VignetteIndexEntry{Working with high-dimensional data (with examples)}
 %\VignetteKeywords{mlegp}
-%\VignetteDepends{mlegp}
 %\VignettePackage{mlegp}
 
 \section{Multivariate Output and Dimension Reduction}\label{sec:SVD}
@@ -127,7 +126,7 @@ for (i in 1:dim(preds)[1]) {
 }
 @
 
-\begin{figure}[htbp]
+\begin{figure}[h]
   \begin{center}
 <<PRINT = FALSE, echo = FALSE, fig=true, eval=TRUE>>=
 main = plotMainEffects(fitPC, effect = 1, no.plot = TRUE)

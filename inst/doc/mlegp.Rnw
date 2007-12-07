@@ -2,7 +2,6 @@
 
 %\VignetteIndexEntry{Full User Manual}
 %\VignetteKeywords{mlegp}
-%\VignetteDepends{mlegp}
 %\VignettePackage{mlegp}
 
 \documentclass[a4paper]{article}
@@ -15,6 +14,7 @@
 \usepackage{natbib}
 \usepackage{amsmath}
 \usepackage{verbatim}
+\usepackage{hyperref}
 \begin{document}
 
 \maketitle
@@ -25,6 +25,7 @@
 \input{SA}
 \input{SVD}
 
+\newpage
 \begin{thebibliography}{}
 \bibitem[Heitmann {\it et~al}., 2006]{Heitmann2006} Heitmann, K., Higdon, D., Nakhleh, C., Habib, S., 2006. Cosmic Calibrat
 ion, {\it The Astrophysical Journal}, {\bf646}, 2, L1-L4.
@@ -36,11 +37,11 @@ uter Model Via       Analysis of Variance and Visualization, in Screening: Metho
  Discovery, and Genetics. A. Dean and S. Lewis, eds. (New York:   Springer).
 \end{thebibliography}
 
-
-
-
-
-
+\section*{Programming Acknowledgements}
+\begin{itemize}
+\item C code for random number generation provided by Mutsuo Saito, Makoto Matsumoto and Hiroshima University (\url{http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT})
+\item C code for L-BFGS algorithm provided by Naoaki Okazaki (\url{http://www.chokkan.org/software/liblbfgs}) 
+\end{itemize}
 
 \end{document}
 

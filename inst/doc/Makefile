@@ -40,7 +40,7 @@ gp_ex.ps: mlegp.dvi
 	dvips -Pwww -pp3-6 -t letter mlegp.dvi -o gp_ex.ps
 
 SA.ps: mlegp.dvi
-	dvips -Pwww -pp7-9 -t letter mlegp.dvi -o SA.ps
+	dvips -Pwww -pp6-9 -t letter mlegp.dvi -o SA.ps
 
 SVD.ps: mlegp.dvi
 	dvips -Pwww -pp10-15 -t letter mlegp.dvi -o SVD.ps

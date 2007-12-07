@@ -1,8 +1,7 @@
 % -*- mode: noweb; noweb-default-code-mode: R-mode; -*-
 
-%\VignetteIndexEntry{mlegp overview}
+%\VignetteIndexEntry{Overview of mlegp}
 %\VignetteKeywords{mlegp}
-%\VignetteDepends{mlegp}
 %\VignettePackage{mlegp}
 
 \section{{\it mlegp}: an overview}

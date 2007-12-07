@@ -1,9 +1,8 @@
 `mlegp` <-
 function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NULL, gp.names = NULL, 
 	PC.UD = NULL, PC.num = NULL, PC.percent = NULL, 
-	simplex.ntries = 5, simplex.maxiter = 100, simplex.breaksize = 1e-10, simplex.stepsize = NULL, 
-	BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, BFGS.stepsize=0.001, 
-	seed = 0, verbose = 1) {
+	simplex.ntries = 5, simplex.maxiter = 100, simplex.abstol = 1e-16, simplex.reltol = 1e-8,  
+	BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, seed = 0, verbose = 1) {
 
 	X = as.matrix(X)
 	Z = as.matrix(Z)
@@ -75,9 +74,8 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 	}
 	
 	if (is.null(nugget)) {
-
 		if (!anyReps(X)) {
-			nugget = 0
+			#nugget = 0
 			if (verbose > 0) cat("no reps detected - nugget will not be estimated\n")
 		}	
 		else {
@@ -95,13 +93,6 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 		numEstimates = numEstimates + dim(X)[2] + 1
 	}
 
-	if (is.null(simplex.stepsize)) simplex.stepsize = rep(5,numEstimates)
-	else {
-		if (length(simplex.stepsize) != numEstimates) {
-			stop("error: length of simplex.stepsize must match number of parameters to estimate")
-		}
-	}
-	
 	estimates = rep(0,numEstimates)
 
 	if (verbose > 0) cat("\n\n")
@@ -118,16 +109,24 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 		if (anyReps(X)) nugget = estimateNugget(X,Z[,i] )	
 		
 	    }
- 
+
+	    success = 0
 	    estimates = rep(0,numEstimates)
-	    estimates = .C("fitGPFromR", as.double(X), as.double(Z[,i]), as.integer(dim(X)[1]), 
-		as.integer(dim(X)[2]), 
+ 	    returnFromC = .C("fitGPfromR", as.double(X), as.integer(nrow(X)), as.integer(ncol(X)),
+		as.double(Z[,i]), as.integer(nrow(Z)), 
 		as.integer(constantMean), 
-		as.integer(simplex.ntries), as.integer(simplex.maxiter),
-		as.double(simplex.breaksize), as.double(simplex.stepsize), 
-		as.integer(BFGS.maxiter), as.double(BFGS.tol), as.double(BFGS.h), as.double(BFGS.stepsize),
+		as.integer(simplex.ntries), as.integer(simplex.maxiter), 
+			as.double(simplex.abstol), as.double(simplex.reltol),
+		as.integer(BFGS.maxiter), as.double(BFGS.tol), as.double(BFGS.h), 
 		as.integer(seed), as.double(nugget), as.integer(length(nugget)), as.double(min.nugget),
-		estimates = as.double(estimates), verbose = as.integer(verbose), PACKAGE="mlegp")$estimates
+		estimates = as.double(estimates), verbose = as.integer(verbose), success = as.integer(success), 
+		PACKAGE="mlegp")
+
+	    if (returnFromC$success != 0) {
+		cat("ERROR: GP cannot be created\n")
+	        return (NULL)
+            }	
+	    estimates = returnFromC$estimates
 
     	    numParams = dim(X)[2]
 	    regSize = 1
@@ -143,6 +142,8 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 	    beta = estimates[1:numParams]
 	    a = rep(2, numParams)
 	    sig2 = estimates[numParams+1]
+
+	    if (is.null(nugget)) nugget = 0
 
 	    if (length(nugget) > 1) {
 		if (verbose > 0) {

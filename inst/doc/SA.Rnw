@@ -2,7 +2,7 @@
 
 %\VignetteIndexEntry{Sensitivity Analysis and Examples}
 %\VignetteKeywords{mlegp}
-%\VignetteDepends{mlegp,adapt}
+%\VignetteDepends{adapt}
 %\VignettePackage{mlegp}
 
 \section{Sensitivity Analysis}\label{sec:SA}

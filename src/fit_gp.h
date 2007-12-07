@@ -26,12 +26,6 @@ fit_gp.h - fits a gp to a set of observations, using numerical methods and
 #ifndef __FIT_GP__
 #define __FIT_GP__
 
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_multimin.h>
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_rng.h>
-
 #include <time.h>
 #include <math.h>
 
@@ -42,47 +36,61 @@ fit_gp.h - fits a gp to a set of observations, using numerical methods and
 #include "matrix_vector.h"
 #include "gp.h"
 #include "print.h"
-
+#include "nelder_mead_min.h"
+#include "SFMT.h"
+#include "lbfgs.h"
 
 // parameters that do not vary; will be passed into minimization functions (f_min, etc)
 typedef struct {
-	gsl_matrix *X;       	// the design that produces the observations
-	gsl_matrix *fX;      	// the mean function will have the form (fX)'B
-	gsl_matrix *Y;		// the observations
-	int num_params;		// number of columns of fX 
+	double *X;       	// the design that produces the observations
+	double *fX;      	// for the mean function will have the form (fX)'B
+	double *Y;		// the observations
+	int nY;                 // number of observations
+	int ncolsX;		// number of columns of X 
+	int ncolsfX; 		// number of columns of fX
 	double h;		// used in derivative approximation [f(x+h) - f(x+h)] / h
-	double *nugget;	        // pointer to nugget 'matrix'; NULL otherwise
+	double *nuggetMatrix;   // pointer to nugget 'matrix'; NULL otherwise
 	int verbose;		// level of detail for output
-	int constantNugget;     // 1 if we are estimating a constant nugget	
+	int estimateNugget;   // 1 if we are estimating a nugget term (either constant or scalar multiplier of nug matrix)	
 	double min_nugget;	// minimum value of the nugget, or can be used to force a nugget
 } gp_params; 
 
 
-/* vector_exp_check - takes exp of each element in the vector; sets to 0 if element < -500 */
-void vector_exp_check(gsl_vector *v) {
+void gp_params_summary(gp_params *p) {
+	printout("summary of gp_params object\n");
+	printout("num obs: %d, ncolX: %d, ncolfX: %d\n", p->nY, p->ncolsX, p->ncolsfX);
+	printMatrix("%6.3f ", p->X, p->nY, p->ncolsX, "X=");
+	printMatrix("%6.3f ", p->Y, p->nY, 1, "Y=");
+	printMatrix("%6.3f ", p->fX, p->nY, p->ncolsfX, "fX=");
+}
+
+
+/* vector_exp_check - takes exp of the first n elements in v; sets to 0 if element < -500 */
+void vector_exp_check(double *v, int n) {
 	int i = 0;
-	for (i = 0; i < v->size; i++) {
-		if (v->data[i] < -500) v->data[i] = 0;
-		else v->data[i] = exp(v->data[i]);
+	for (i = 0; i < n; i++) {
+		if (v[i] < -500) v[i] = 0;
+		else v[i] = exp(v[i]);
 	}
 }
 
-/* vector_log_subset - takes log of elements 0 through elements (size-1) in vector v */
-void vector_log_subset(gsl_vector *v, int size) {
+/* vector_log - takes log of the first n elements in v */
+void vector_log(double *v, int n) {
 	int i = 0; 
-	for (i = 0; i < size; i++) {
-		v->data[i] = log(v->data[i]);
+	for (i = 0; i < n; i++) {
+		v[i] = log(v[i]);
 	}
 }
-
 
 
 /**********************************************************************************
 f_min - finds the neg log like of the gp
-	gsl_vector *orig_v - vector of parameters being estimated, consisting of
-		correlation coefficients, overall sig2, sig2(nugget), in that
-		order; all parameters must be on log scale; sig2(nuget) is 
-		a scaled nugget and is actually sig2(nugget) / sig2(gp) 
+	const int num_p = the # of parameters to estimate where closed form mle's
+			  do not exist (always equal to ncolX + 1(for a nugget term))
+	double *orig_v - vector of parameters being estimated, consisting of
+		correlation coefficients, sig2(nugget), in that order; all 
+		parameters must be on log scale; sig2(nugget) is a scaled nugget 
+		and is actually sig2(nugget) / sig2(gp) 
 	void *params - pointer to gp_params structure, which determines whether
 			we are using a constant nugget, nugget matrix, the
 			mean function, etc.
@@ -90,290 +98,178 @@ f_min - finds the neg log like of the gp
 	returns: -log likelihood of gp; or DBL_MAX if there is an error inverting 
 			var-cov matrix
 ***********************************************************************************/
-	
-double f_min(const gsl_vector *orig_v, void *params) {
+double f_min(const int num_p, double *orig_v, void *params) {
 	int i = 0;
 	gp_params *p = (gp_params *) params;
 
-	gsl_matrix *corr = gsl_matrix_alloc(p->X->size1,p->X->size1);
+//	gp_params_summary(p);
 
-	gsl_vector *v = gsl_vector_alloc(orig_v->size);
-	for (i = 0; i < v->size; i++) {
-		v->data[i] = orig_v->data[i];
+	double *corr = PACKED_MATRIX(p->nY);
+
+	double *v = VECTOR(num_p);
+
+	vectorCopy(orig_v, v, num_p);
+	vector_exp_check(v, num_p);   // transform back to original values
+
+	double *B = VECTOR(p->ncolsX);
+	for (i = 0; i < p->ncolsX; i++) {
+		B[i] = v[i];
 	}
-	
-	vector_exp_check(v);   // transform back to original values
-	gsl_vector *B = gsl_vector_alloc(p->num_params);
-	for (i = 0; i < B->size; i++) {
-		B->data[i] = v->data[i];
-	}
 
-	createCorrMatrix(p->X, B, corr);
+	createCorrMatrix(p->X, B, corr, p->nY, p->ncolsX);
 
-	if (p->nugget != NULL) addNuggetMatrix(corr, v->data[p->num_params], p->nugget);
-	else if (p->constantNugget != 1) addNugget(corr, v->data[p->num_params]);
-	addNugget(corr, p->min_nugget); // add the minimum nugget
+	if (p->nuggetMatrix != NULL) addNuggetMatrixToPackedMatrix(corr, v[p->ncolsX], p->nuggetMatrix, p->nY);
+	else if (p->estimateNugget == 1) addNuggetToPackedMatrix(corr, v[p->ncolsX], p->nY);
+	addNuggetToPackedMatrix(corr, p->min_nugget, p->nY); // add the minimum nugget
 
-	gsl_matrix *corrInv = gsl_matrix_alloc(p->X->size1,p->X->size1);
-	
-	gsl_set_error_handler_off();
+	double *corrInv = MATRIX(p->nY, p->nY);
+	createIdentityMatrix(corrInv, p->nY);
 
-	i = solve(corr, corrInv);
-	
-	gsl_set_error_handler(NULL);
+	double *copyCorr = PACKED_MATRIX(p->nY);
+	copyPackedMatrix(corr, copyCorr, p->nY);
 
-	if (i == 1) {  // singular matrix!
-		gsl_vector_free(B);
-		gsl_matrix_free(corr);
-		gsl_matrix_free(corrInv);
+	int info = LP_sym_pos_solve(copyCorr, p->nY, corrInv, p->nY);
+	if (info != 0) {  // copyCorr is singular 
+		FREE_VECTOR(B);
+		FREE_VECTOR(v);
+		FREE_MATRIX(corr);
+		FREE_MATRIX(copyCorr);
+		FREE_MATRIX(corrInv);
 		return DBL_MAX;
 	}
-		
-	gsl_matrix *bhat = gsl_matrix_alloc(p->fX->size2, 1);
+	// copyCorr contains cholesky decomp, corrInv is corrInv
 	
-	if (calcBhat(p->fX, corrInv, p->Y, bhat) == 1) {
-		gsl_vector_free(B);
-		gsl_matrix_free(corr);
-		gsl_matrix_free(corrInv);
+	double *bhat = VECTOR(p->ncolsfX);	
+
+	if (calcBhat(p->fX, p->nY, p->ncolsfX, corrInv, p->Y, bhat) != 0) { 
+		FREE_VECTOR(B);
+		FREE_VECTOR(v);
+		FREE_MATRIX(corr);
+		FREE_MATRIX(copyCorr);
+		FREE_MATRIX(corrInv);
 		return DBL_MAX;
 	}
+	double *mu_hat = MATRIX(p->nY, 1);
+	matrix_multiply(p->fX, p->nY, p->ncolsfX, bhat, 1, mu_hat);
+	
+	double sig2 = calcMLESig2(p->Y, mu_hat, corrInv, p->nY);
 
-	gsl_matrix *mu_hat = gsl_matrix_alloc(p->fX->size1, bhat->size2);
-	matrix_multiply(p->fX, bhat, mu_hat);
+	unpacked_matrix_scale(corr, sig2, p->nY);
 
+	double *Y = VECTOR(p->nY);
+	copyVector(p->Y, Y, p->nY);
 
-	double sig2 = calcMLESig2(p->Y, mu_hat, corrInv);
+	double ans = - logdmvnorm(Y, mu_hat, corr, p->nY);
 
-	gsl_matrix_scale(corr, sig2);
+	FREE_MATRIX(corr);
+	FREE_VECTOR(B);
+	FREE_VECTOR(v);
+	FREE_MATRIX(corrInv);
+	FREE_MATRIX(copyCorr);
+	FREE_VECTOR(bhat);
+	FREE_MATRIX(mu_hat);
+	FREE_VECTOR(Y);
 
-	gsl_vector *Y_vec = gsl_vector_alloc(p->Y->size1);
-	gsl_vector *mu_hat_vec = gsl_vector_alloc(p->Y->size1);
-
-	toVector(p->Y, Y_vec);
-	toVector(mu_hat, mu_hat_vec);
-
-	double ans = - logdmvnorm(Y_vec, mu_hat_vec, corr);
-	gsl_matrix_free(corr);
-	gsl_vector_free(B);
-	gsl_vector_free(v);
-	gsl_matrix_free(corrInv);
-	gsl_matrix_free(bhat);
-	gsl_matrix_free(mu_hat);
-	gsl_vector_free(Y_vec);
-	gsl_vector_free(mu_hat_vec);
 	return ans;
 
 } // end f_min
 
 
+// for printing progress after each iteration in the BFGS method; returning anything other than a 0
+// will cancel the optimization process
+static int BFGS_progress(
+	void *instance,		       // pointer to external data
+	const lbfgsfloatval_t *x,      // parameter vector
+	const lbfgsfloatval_t *g,      // the gradient vector
+	const lbfgsfloatval_t fx,      // function value
+	const lbfgsfloatval_t xnorm,   // euclidian norm of variables
+	const lbfgsfloatval_t gnorm,   // euclidian norm of gradient
+	const lbfgsfloatval_t step,    // line search step size
+	int n,                         // # of parameters
+	int k,                         // iteration count
+	int ls                         // # of evaluations called for this iteration
+	)
+{
+	printout("\titeration: %d,", k);
+	printout("loglike = %f\n", -fx);
+	return 0;
+}
 
-
-// finite difference approximation to gradient; uses forward difference
-// if current v has singular var-cov matrix, set gradient to 0;
-// if f(v+h) has singular var-cov matrix, try backward difference approx,
-// if f(v-h) has singular var-cov matrix, set gradient to 0
 
 /***********************************************************************************
-df_min - approximates partial derivatives using a forward difference approximation
-	for each parameter using the current values of parameters given in the 
-	vecotr 'v'. These gradients are returned in the vector df; if forward
-	approximation does not work; try backward difference approximation. If 
-	none of these work or current v cannot be evaluated, return a gradient 
-	0. This function is not called until after simplex method, and setting
-	the gradient to 0 is consistent with having an mle near the edge of 
-	a parameter space where the var-cov matrix becomes singular.
-
-	gsl_vector *v and void *params are the same as in f_min
+fdf_evaluate - used with BFGS method; calculates gradient vector and evaluates
+ 	       the function at the current parameter value; partial derivatives
+	       are approximated using a forward difference approximation for each
+               parameter. If forward difference approximation cannot be evaluated,
+               a backward difference approximation is tried; if none of these work
+               or if the current parameter vector cannot be evaluated, the gradient
+               is set to zero. This function is not called until after simplex method, 
+	       and setting the gradient to 0 is consistent with having an mle near the edge of 
+	       a parameter space where the var-cov matrix becomes singular.
 ************************************************************************************/
+static lbfgsfloatval_t fdf_evaluate(
+	void *params,              // pointer to gp_param struct
+	const lbfgsfloatval_t *v,  // current values (on log scale)
+	lbfgsfloatval_t *g,        // gradient vector
+	const int n,               // number of parameters
+	const lbfgsfloatval_t step // current step of line search (not used by me)
+	)
+{
 
-void df_min(const gsl_vector *v, void *params, gsl_vector *df) {
-	gsl_vector *v_plus_h = gsl_vector_alloc(v->size);
+	double fv = f_min(n, (double* )v, params);          // current value
+
+	double *v_plus_h = VECTOR(n);
 	gp_params *p = (gp_params *) params;
 
 	int i;
-	double fv_plus_h, fv;
-	for (i = 0; i < v->size; i++) {
-		gsl_vector_memcpy(v_plus_h, v);
-		//v_plus_h->data[i] = v->data[i] + p->h;        // when v is on actual scale
-		// v contains log of all parameters
-		v_plus_h->data[i] = v->data[i] + log(1 + p->h*exp(-v->data[i])); //we will look at v, v+h on true scale
-		fv_plus_h = f_min(v_plus_h, params);
-		fv = f_min(v, params); 
+	double fv_plus_h; 
+	double *v_copy = VECTOR(n);
+	copyVector(v, v_copy,n);         // on log scale
+	
+	vector_exp_check(v_copy, n);      // v_copy is on actual scale
+	for (i = 0; i < n; i++) {
+		copyVector(v_copy, v_plus_h, n);   // v_plus_h contains values on actual scale
+		v_plus_h[i] = v_copy[i] + p->h;
+		vector_log(v_plus_h, n);           // put back on log scale
+		fv_plus_h = f_min(n, v_plus_h, params);
 		if (fv == DBL_MAX) {
-			df->data[i] = 0;
+			g[i] = 0;
 		}
 		else if (fv_plus_h == DBL_MAX) {     // try backward approximation
-			gsl_vector_memcpy(v_plus_h, v);
-			//we will look at v, v-h on true scale
-			v_plus_h->data[i] = v->data[i] - log(1 + p->h*exp(-v->data[i])); 
-			fv_plus_h = f_min(v_plus_h, params);
+			copyVector(v_copy, v_plus_h, n);   // v_plus_h contains values on actual scale
+			v_plus_h[i] = v_copy[i] - p->h;
+			vector_log(v_plus_h, n); // put back on log scale
+			fv_plus_h = f_min(n, v_plus_h, params);
 			if (fv_plus_h == DBL_MAX) {
-			    df->data[i] = 0;
+			    g[i] = 0;
 			}
-			else df->data[i] = (fv - fv_plus_h) / -p->h;		
+			else g[i] = (fv - fv_plus_h) / -p->h;		
 
 		}
-		else df->data[i] = (fv_plus_h - fv) / p->h;
+		else g[i] = (fv_plus_h - fv) / p->h;
 	}
+
+	FREE_VECTOR(v_plus_h);
+	FREE_VECTOR(v_copy);
+	return fv;
 }
 
 
-void fdf_min(const gsl_vector *v, void *params, double *f, gsl_vector *df) {
-	*f = f_min(v, params);
-	df_min(v, params, df);
-}
-
-
-/****************************************************************************************************************
-optimizeUsingSimplex - uses Nelder Mead Simplex to find mles
-	gsl_vector *v - vector of parameters, same as in f_min
-	gp_params *params - same as in f_min
-	gsl_vector *steps - pointer to vector of initial step sizes
-	int max_iter - maximum number of iterations
-	double break_size - stoppint criteria
-
-	returns: the value at the minimum (neg log likelihood)
-****************************************************************************************************************/
-
-double optimizeUsingSimplex(gsl_vector *v, gp_params *params, gsl_vector *steps, int max_iter, double break_size) {
-
-	int every = 20; // display status every 'every' iterations
-
-	/*** first use a simplex approach ***/
-
-	gsl_multimin_function f_minimize;  // simplex
-	f_minimize.f = f_min;
-	f_minimize.n = v->size;
-	f_minimize.params = (void *) params;
-
-	const gsl_multimin_fminimizer_type *min_type = gsl_multimin_fminimizer_nmsimplex;   // simplex
-
-	gsl_multimin_fminimizer *the_minimizer;
-	the_minimizer = gsl_multimin_fminimizer_alloc(min_type,v->size);
-
-	gsl_multimin_fminimizer_set(the_minimizer, &f_minimize, v,steps); // simplex
-	int iter = 0, status;
-	do {
-		#ifdef __useR__
-		R_CheckUserInterrupt();
-		#endif
-		iter++;
-		status = gsl_multimin_fminimizer_iterate(the_minimizer); // simplex
-		if (params->verbose > 0 && iter % every == 0) {
-			printout("\titeration: %d, ", iter);
-			printout("loglike = %f", -the_minimizer->fval); // simplex 
-			if (params->verbose == 2) {
-				printout(", est: "); printVector(the_minimizer->x); 
-			}
-			else printout("\n");
-		}
-		
-		if (status) {
-			break;
-		}
-
-		status = gsl_multimin_test_size(the_minimizer->size, break_size); // simplex
-		
-		if (status == GSL_SUCCESS) {
-			if (params->verbose > 0) {
-				printout("\tminimum found at iter %d, loglike = %f\n", iter, -the_minimizer->fval);
-				//printVector(the_minimizer->x);
-			}
-		}
-	
-	} while (status == GSL_CONTINUE && iter < max_iter);
-
-	gsl_vector_memcpy(v, the_minimizer->x);
-	double fval = the_minimizer->fval;
-	gsl_multimin_fminimizer_free(the_minimizer); // simplex
-	return fval;
-}
-
-/****************************************************************************************************************
-optimizeUsingGradient - uses bfgs method to find mles
-	gsl_vector *v - vector of parameters, same as in f_min
-	gp_params *params - same as in f_min
-	double step_size - size of the first trial step 
-	double tol - stopping condition is when dot product of gradient < tol
-	int max_iter - maximum number of iterations
-
-	returns: the value at the minimum (neg log likelihood)
-****************************************************************************************************************/
-double optimizeUsingGradient(gsl_vector *v, gp_params *params, double step_size, double tol, int max_iter) {
-
-	int every = 5;     // report status every so many iterations
-
-	gsl_multimin_function_fdf f_minimize;  
-	f_minimize.f = f_min;
-	f_minimize.n = v->size;
-
-	f_minimize.params = (void *) params;
-	f_minimize.df = df_min;		// gradient only
-	f_minimize.fdf = fdf_min;	// gradient only
-
-	const gsl_multimin_fdfminimizer_type *min_type;
-	min_type = gsl_multimin_fdfminimizer_vector_bfgs; 
-	///min_type = gsl_multimin_fdfminimizer_conjugate_pr; 
-
-	gsl_multimin_fdfminimizer *the_minimizer;
-	the_minimizer = gsl_multimin_fdfminimizer_alloc(min_type,v->size);
-
-	gsl_multimin_fdfminimizer_set(the_minimizer, &f_minimize, v,step_size, tol); // gradient
-
-	int iter = 0, status = 0;
-
-	if (max_iter > 0) {
-	do {
-		#ifdef __useR__
-		R_CheckUserInterrupt();
-		#endif
-		iter++;
-		status = gsl_multimin_fdfminimizer_iterate(the_minimizer); // gradient
-		if (params->verbose > 0 && (iter % every) == 0) { 
-			printout("\titer: %d, loglike = %f", iter, -the_minimizer->f); // gradient
-			if (params->verbose == 2) {
-				printout(", est: ");
-				printVector(the_minimizer->x);
-			}
-			else printout("\n");
-		}
-		if (status) {
-			break;
-		}
-
-		status = gsl_multimin_test_gradient(the_minimizer->gradient, tol); // gradient
-		
-		if (status == GSL_SUCCESS) {
-			if (params->verbose > 0) {
-				printout("BFGS method complete, loglike = ");
-				printout("%f\n", -the_minimizer->f);
-			}
-		}
-	
-	} while (status == GSL_CONTINUE && iter < max_iter);
-	} // if max_iter > 0
-
-	double fval = the_minimizer->f;
-	gsl_multimin_fdfminimizer_free(the_minimizer);
-	return fval;
-}
-
-
-/* findMinEuclidianDist - finds the minimum (and max) Euclidian distance between all paris of points
-	in the design matrix X (excluding identical design points). After returning,
-	m1 points to the minimum distance and m2 points to the maximum distance
+/* findMinEuclidianDist - finds the minimum (and max) Euclidian distance between all pairs of points
+	in the design matrix X (excluding identical design points). After returning, m1 points 
+        to the minimum distance and m2 points to the maximum distance
 */
-void findMinEuclidianDist(gsl_matrix *X, double *m1, double *m2) {
+void findMinEuclidianDist(const double *X, const int nrows, const int ncols, double *m1, double *m2) {
 	int i, j, p;
         *m1 = DBL_MAX;
         *m2 = 0;
 	double d, diff;
-        for (i = 0; i < X->size1 - 1; i++) {
-                for (j = i+1; j < X->size1; j++) {
+        for (i = 0; i < nrows - 1; i++) {
+                for (j = i+1; j < nrows; j++) {
 			d = 0.0;
-			for (p = 0; p < X->size2; p++) {
-				diff = (X->data[i*X->tda+p] - X->data[j*X->tda+p]);
-				d += diff*diff;
+			for (p = 0; p < ncols; p++) {
+				diff = MATRIX_GET(X,i,p,ncols) - MATRIX_GET(X,j,p,ncols);
+				d+= diff*diff;
 			}
                         if (d > 0 && d < *m1) {
                                 *m1 = d;
@@ -387,267 +283,389 @@ void findMinEuclidianDist(gsl_matrix *X, double *m1, double *m2) {
 
 /****************************************************************************************************
 getUnivariateCorRange
-	gsl_matrix *X - pointer to design matrix 
+	const double *X - pointer to design matrix 
 	double *m1 - at end of function call, pointer to value of beta for which max correlation btwn
 			any 2 observations is 0.65
 	double *m2 - at end of function call, pointer to value of beta for which min correlation btwn
 			any 2 observations is 0.3
 
 	note: the purpose of this function is to find initial values of correlation parameters so 
-		that var-cov matrix is NOT singular (which could happen if correlation btwn any
-		2 observations is too high)
+		that the var-cov matrix is not (approximately) singular (which could happen if correlation btwn any
+		2 observations is close to 1)
 ****************************************************************************************************/
-void getUnivariateCorRange(gsl_matrix *X, double *m1, double *m2) {
+void getUnivariateCorRange(const double *X, int nrows, int ncols, double *m1, double *m2) {
    double xmin, xmax;
-   findMinEuclidianDist(X, &xmin, &xmax);
+   findMinEuclidianDist(X, nrows, ncols, &xmin, &xmax);
    *m1 = -log(.65) / xmin;    
    *m2 = -log(.3) / xmin;     
 }
 
 
-// simplex_steps must be same size as number of parameters to estimate; we do not check this here
-// user can also specify: step_size for simplex, step size for gradient
+void printBFGSReturnMsg(int x) {
+
+switch(x) {
+
+	case 0:
+	case LBFGSERR_ROUNDING_ERROR:           // most likely this is convergence in line search
+	case LBFGSERR_MINIMUMSTEP:              // line search step became smaller than lbfgs_parameter_t::min_step
+        case LBFGSERR_MAXIMUMSTEP:               // line search step became larger than lbfgs_parameter_t::max_step
+		return;
+        default: 
+		printerr("L-BFGS warning: ");
+		if (x == LBFGSERR_LOGICERROR) printerr("logic error\n");
+		else if (x == LBFGSERR_OUTOFMEMORY) printerr("ERROR: out of memory\n");
+		else if (x == LBFGSERR_MAXIMUMLINESEARCH) printerr("line search routine reached max # of evaluations\n");
+		else if (x == LBFGSERR_WIDTHTOOSMALL) 
+			printerr("relative width of interval of uncertainty is at most lbfgs_parameter_t::xtol\n");
+		/************** check input parameters***************************************************************/
+		else if (x == LBFGSERR_INVALID_N) printerr("invalid number of variables specified\n");
+		else if (x == LBFGSERR_INVALID_N_SSE) printerr("invalid number of variables (for SSE) specified\n"); 
+		else if (x == LBFGSERR_INVALID_MINSTEP) 
+			printerr("Invalid parameter lbfgs_parameter_t:min_step specified\n");
+		else if (x == LBFGSERR_INVALID_MAXSTEP) 
+			printerr("invalid parameter lbfgs_parmaeter_t:max_step specified\n");
+		else if (x == LBFGSERR_INVALID_FTOL) 
+			printerr("invalid parameter lbfgs_parameter_t::ftol specified\n");
+		else if (x == LBFGSERR_INVALID_GTOL) 
+			printerr("invalid parameter lbfgs_parameter_t::gtol specified\n");
+		else if (x == LBFGSERR_INVALID_XTOL) 
+			printerr("invalid parameter lbfgs_parameter_t::xtol specified\n");
+		else if (x == LBFGSERR_INVALID_MAXLINESEARCH) printerr("lbfgs_parameter_t::max_linesearch specified\n");
+		else if (x == LBFGSERR_INVALID_ORTHANTWISE) 
+			printerr("invalid parameter lbfgs_parameter_t::orthantwise_c specified\n");
+		else if (x == LBFGSERR_INVALIDPARAMETERS) printerr("logic error (negative line-search step) occurred\n");
+		/****************************************************************************************************/
+		else if (x == LBFGSERR_OUTOFINTERVAL) printerr("line search step went out of interval of uncertainty\n");
+		else if (x == LBFGSERR_INCORRECT_TMINMAX) 
+			printerr("logic error occured or interval of uncertainty became too small\n");
+		else if (x == LBFGSERR_MAXIMUMITERATION) 
+			printerr("algorithm reaches maximum # of iterations\n");
+		else if (x == LBFGSERR_INCREASEGRADIENT) 
+			printerr("current search direction increases object function value\n");
+		else printerr("warning: unknown error message\n");
+	}
+	/************************ NOT USED ********************
+	else if (x == LBFGSERR_CANCELED) printerr("canceled by user\n");
+	else if (x == LBFGSFALSE) printout("FALSEi\n");
+	else if (x == LBFGSTRUE) printout("TRUE\n");
+	else if (x == LBFGSERR_UNKNOWNERROR) printerr("unknown error\n");
+	*****************************/
+}
+
 
 /***************************************************************************************************************
-fitGP - the main function that finds mles for gp parameters; we run 'numSimplexTries' simplexes to find 
+fitGP - the driver function that finds mles for gp parameters; we run 'numSimplexTries' simplexes to find 
 		a good initial value, then continue with bfgs method
-	gsl_matrix *X - pointer to design matrix that determines correlation structure
-	gsl_matrix *Y - pointer to 1-column matrix of observations
-	int numParams - the number of columns in X 
+	const double *X - pointer to design matrix for the respone(s)
+	const int nrowsX - # of rows of X, = to number of observations in Y 
+	const int ncolsX - # of columns of X, = to number of design parameters	
+	const double *Y - pointer to 1-column matrix of observations
+	const int nrowsY - number of observations (must match nrowsX)
 	int constantMean - 1 if gp should have a constant mean; otherwise mean function will be (1 X) %*% B
 		(linear regression in X with intercept added)
 	int numSimplexTries - the number of simplexes to run before moving to bfgs method
 	int maxSimplexIterations - maximum number of iterations / simplex
-	double break_size - stopping criteria for simplex
-	double *simplex_steps - vector of initial step sizes for simplex (of length equal to # parameters)
-	int BFGS_max_iter - max # iof iterations for bfgs method
-	double BFGS_tol - stopping criteria for bfgs method
-	double BFGS_steps - initial step size for bfgs method
+	double simplex_abstol - absolute tolerance for simplex
+	double simplex_reltol - relative tolerance of simplex
+	int BFGS_max_iter - max # of iterations for bfgs method
+	double BFGS_tol - stopping criteria for bfgs method; minimization terminates when 
+	 			||g|| <  BFGS_tol * max(1, ||x||), where ||.|| denotes the 
+   				Euclidean (L2) norm. 
+	double BFGS_h -   for finite difference approximation to calculate gradient during BFGS
 	int rng_seed - random # seed
 	double *nugget - pointer to initial nugget value or nugget matrix
 	int nugget_length - 1 for constant nugget, or greater than 1 for nugget matrix, in which case
-		it should be equal to the # of observations
-	double min_nugget - minimum value f nugget (added to diagonal of var-cov matrix)
-	double *estimates - stores values of mles at end of function call
-	int verbose - 0 for no status reporting; 1 otherwise
+		 should be equal to the # of observations; 0 otherwise
+	double min_nugget - minimum value of nugget (added to diagonal of var-cov matrix)
+	double *estimates - stores values of mles at end of function call; order of estimates will be:
+			    ( meanReg parameters, correlation parameters, sig2(GP), sig2(nugget) )
+	int verbose - 0 for no status reporting; 1 for some; 2 for most
+
+	returns 0 if success; -1 otherwise
 **************************************************************************************************************/
-void fitGP(gsl_matrix *X, gsl_matrix *Y, int numParams, int constantMean, 
-	int numSimplexTries, int maxSimplexIterations, double break_size, double *simplex_steps,
-	int BFGS_max_iter, double BFGS_tol, double BFGS_h, double BFGS_steps, int rng_seed,
-	double *nugget, int nugget_length, double min_nugget, double *estimates, int verbose) {
+int fitGP(const double *X, const int nrowsX, const int ncolsX, 
+	   const double *Y, int nrowsY, 
+	   int constantMean, 
+	   int numSimplexTries, int maxSimplexIterations, double simplex_abstol, double simplex_reltol, 
+	   int BFGS_max_iter, double BFGS_tol, double BFGS_h,  
+           int rng_seed, 
+	   double *nugget, int nugget_length, double min_nugget, 
+	   double *estimates, int verbose) {
 
-	if (X->size1 != Y->size1) {
+	init_gen_rand(rng_seed);
+
+	if (nrowsX != nrowsY) {
 		printerr("ERROR: number of observations does not match number of design points\n");
-		abort();
+		return -1;
 	}
-	if (nugget_length > 1 && nugget_length != Y->size1) {
+	if (nugget_length > 1 && nugget_length != nrowsY) {
 		printerr("ERROR: length of nugget matrix must match number of observations, or use constant nugget\n");
-		abort();
+		return -1;
 	}
 
-	time_t curtime;
-	struct tm *loctime;
-	curtime = time(NULL);
-	loctime = localtime(&curtime);
-
-	gsl_matrix *fX;
-	if (constantMean > 0) fX = gsl_matrix_alloc(X->size1, 1);
-	else fX = gsl_matrix_alloc(X->size1, X->size2 + 1);
+	double *fX;
+	int ncolsfX = 0;
 	if (constantMean > 0) {
-		gsl_matrix_set_all(fX, 1);
+		fX = MATRIX(nrowsX, 1);
+		ncolsfX = 1;
+		setMatrix(fX, nrowsX, ncolsfX, 1.0);
 	}
 	else {
-		gsl_matrix *ones = gsl_matrix_alloc(X->size1, 1);
-		gsl_matrix_set_all(ones, 1);
-		cbind(ones, X, fX);
+		fX = MATRIX(nrowsX, ncolsX+1);
+		ncolsfX = ncolsX+1;
+		double *ones = MATRIX(nrowsX, 1);
+		setMatrix(ones, nrowsX, 1, 1.0);
+		cbind(ones, X, fX, 1, ncolsX, nrowsX);
+		FREE_MATRIX(ones);
 	}
 
 	gp_params gp;
-	gp.X = X;
-	gp.fX = fX;	
-	gp.Y = Y;
-	gp.num_params = X->size2;  // number of regression parameters for mean
-	gp.h = BFGS_h;             // for finite difference approximation
-	gp.nugget = NULL;          // pointer to nugget array for non-constant nugget 
-	if (nugget_length > 1) gp.nugget = nugget;
+	gp.X = (double *) X;	   // design matrix for observed responses
+	gp.nY = nrowsX;
+	gp.ncolsX = ncolsX;
+	gp.ncolsfX = ncolsfX;
+	gp.fX = (double *) fX;	           // design matrix for mean
+	gp.Y = (double *) Y;
+	gp.ncolsX = ncolsX;  // number of correlation parameters 
+	gp.h = BFGS_h;       // for finite difference approximation
+	gp.nuggetMatrix = NULL;    // pointer to nugget array for non-constant nugget 
+	if (nugget_length > 1) gp.nuggetMatrix = nugget;
 	gp.verbose = verbose;
-	gp.constantNugget = 0;
-	if (nugget_length == 1 && nugget[0] <= 0) gp.constantNugget = 1;
-
+	gp.estimateNugget = 1;
+	if (nugget_length < 1) gp.estimateNugget = 0;  // we are NOT estimating nugget
 	gp.min_nugget = min_nugget;
 
-	/** the vector of parameters to maximize; correlation parameters + nugget **/
-	gsl_vector *v;
-	if (nugget_length == 1 && nugget[0] <= 0) v = gsl_vector_alloc(X->size2); // corr params only
-	else  v = gsl_vector_alloc(X->size2 + 1);    // corr params + nugget term
+	// the vector of parameters to maximize; correlation parameters + nugget 
+	double *v;
+	int v_length = ncolsX;       // for correlation parameter estimates
 
-	gsl_vector *steps = gsl_vector_alloc(v->size);
-	int i;
-	for (i = 0; i < v->size; i++) {
-		steps->data[i] = simplex_steps[i];
-	}	
+	if (gp.estimateNugget == 1) v_length++;  
 
-	/** choose initial values **/
-	double sig2 =  gsl_stats_variance(Y->data, 1, Y->size1);   
+	v = VECTOR(v_length);  
 
+	// choose initial values 
+	double sig2 =  vectorVariance(Y, nrowsY);   
+	double initial_scaled_nugget = 0;       // we will use the same initial nugget for each simplex
 	if (nugget_length == 1 && nugget[0] > 0) {   // we are adding a constant nugget
 		double nug;
 		if (nugget_length == 1) nug =  *nugget; 
 		else nug = 1.0;
 		nug = nug / sig2;	// scale the nugget
-		v->data[X->size2] = nug;	
+		v[ncolsX] = nug;         
+		initial_scaled_nugget = v[ncolsX]; 
 	}
 	else if (nugget_length > 1) {
-		v->data[X->size2] = 1.0 / sig2;
+		v[ncolsX] = 1.0 / sig2;    // scaled nugget is sig2e / sig2GP
+		initial_scaled_nugget = v[ncolsX];
 	}	
 		
-
 	double m1 = 0, m2;
-	/** correlation btwn 2 closest points is btwn m1 and m2, assuming a constant beta **/
-	getUnivariateCorRange(X, &m1, &m2);   
+	// correlation btwn 2 closest points is btwn m1 and m2, assuming a constant beta 
+	getUnivariateCorRange(X, nrowsX, ncolsX, &m1, &m2);   
 
-	/************ randomly select initial corr params **/
-	const gsl_rng_type *rng_type;
-	gsl_rng *rng;
-	gsl_rng_env_setup();
-	rng_type = gsl_rng_default;
-	rng = gsl_rng_alloc(rng_type);
-	gsl_rng_set(rng, rng_seed);
 	int simplex_try;
-	
 	double fval = 0;
 	double best_fval = 999999999999999;
 	int best_try = 0;
-	gsl_vector *best_v = gsl_vector_alloc(v->size);
+	double *best_v = VECTOR(v_length);
+	double *v_save = VECTOR(v_length);
+	int i;
 
+  	const double alpha  = 1.0; // default  reflection factor for nelder-mead 
+	const double bet   = 0.5; // default contraction factor for nelder-mead
+	const double gamm  = 2.0; // default expansion factor for nelder-mead
+	int maxit = maxSimplexIterations;
+	
 	for (simplex_try = 0; simplex_try < numSimplexTries; simplex_try++) { 
 	
-		if (verbose > 0) printout("running simplex # %d...\n", simplex_try+1);
+		if (verbose > 0 && maxit > 0) printout("running simplex # %d...\n", simplex_try+1);
 		
-	
-		for (i = 0; i < X->size2; i++) {
-			v->data[i] = m1 + (m2 - m1) * gsl_rng_uniform(rng); 
+		for (i = 0; i < ncolsX; i++) {
+			v[i] = m1 + (m2 - m1) * genrand_res53(); 
 		}
 	
-		// put all initial param values on the log scale
-		vector_log_subset(v, X->size2);
+		if (v_length > ncolsX) {     // we are estimating a nugget term
+			v[ncolsX] = initial_scaled_nugget;
+		}
 
-		fval = optimizeUsingSimplex(v, &gp, steps, maxSimplexIterations, break_size);
-		if (verbose > 0) {
-			printout("...simplex #%d complete, loglike = %f\n", simplex_try+1, -fval);
+		// put all initial param values on the log scale
+		vector_log(v, v_length);
+
+		int fail = 0;
+		
+		int trace = 0;   // trace off
+		if (verbose == 2) trace = 1; 
+
+		int fncount;
+
+	        if (maxit > 0) {
+		  nelder_mead_min(v_length, v, v_save, &fval,
+		     f_min, &fail, simplex_abstol, simplex_reltol, &gp, alpha, bet, 
+		     gamm, trace, &fncount, maxit);
+
+		  if (verbose > 0) {
+		    	if (fail != 1) 
+				printout("...simplex #%d complete, loglike = %f (convergence)\n", simplex_try+1, -fval);
+		        else printout("...simplex #%d complete, loglike = %f\n", simplex_try+1, -fval);
+		  }	
 		}
+
+		if (maxit == 0) vectorCopy(v, v_save, v_length);   // because v_save gets copied to best_v	
 		if (simplex_try == 0 || fval < best_fval) {
 			best_fval = fval;
 			best_try = simplex_try + 1;
-			gsl_vector_memcpy(best_v, v);
+			vectorCopy(v_save, best_v, v_length);
 		}
+		if (maxit == 0) break;       // initial values must be in best_fval		
+
 	}
 
-		if (verbose > 0) {
-			printout("\nusing BFGS method from simplex #%d...\n", best_try);
-		}
+	if (verbose > 0 && maxit > 0 ) {
+		printout("\nusing BFGS method from simplex #%d...\n", best_try);
+	}
 
-		fval = optimizeUsingGradient(best_v, &gp, BFGS_steps, BFGS_tol, BFGS_max_iter);
+	lbfgs_parameter_t *BFGS_params = malloc(sizeof(lbfgs_parameter_t));
+	lbfgs_parameter_init(BFGS_params);
 
+	BFGS_params->epsilon = BFGS_tol; //1e-5;
+	BFGS_params->max_iterations = BFGS_max_iter; //note 0, leads to iteration until convergence (or error)
 
-	/***************/
+	int ret;
+	if (BFGS_params->max_iterations > 0) {
+		if (verbose == 0) ret = lbfgs(v_length, best_v, fdf_evaluate, NULL, (void *) &gp, BFGS_params);
+		else ret = lbfgs(v_length, best_v, fdf_evaluate, BFGS_progress, (void *) &gp, BFGS_params);
+		/* Report the result. */
+		printout("...L-BFGS method complete\n");
+		printBFGSReturnMsg(ret);
+	}
+
 	///// REPORT RESULTS ////
+	fval = f_min(v_length, best_v, (void *) &gp);  // do this while estimates are still on log scale
+	if (verbose) printout("\nMaximum likelihood estimates found, log like =  %f\n", -fval);   
 
-	if (verbose) printout("\nmaximum likelihood estimates found, log like =  %f\n", -fval);   // gradient
-	
 	// put best estimates on actual scale
-	vector_exp_check(best_v);
+	vector_exp_check(best_v, v_length);
 
 	// get mle's for beta corr parameters	
-	gsl_vector *B = gsl_vector_alloc(numParams);
-	for (i = 0; i < numParams; i++) {
-		B->data[i] = best_v->data[i];
+	double *B = VECTOR(ncolsX);
+
+	for (i = 0; i < ncolsX; i++) {
+		B[i] = best_v[i];
 	}	
 
-	gsl_matrix *corr = gsl_matrix_alloc(X->size1, X->size1);
-	createCorrMatrix(X, B, corr);
+	double *corr = PACKED_MATRIX(nrowsX);	
+	createCorrMatrix(X, B, corr, nrowsX, ncolsX); 
 
-	if (nugget_length == 1 && nugget[0] > 0) {
-		addNugget(corr, best_v->data[numParams]);
+	if (nugget_length == 1 && nugget[0] > 0) {     // constant nugget
+		//printout("add constant nugget");
+		addNuggetToPackedMatrix(corr, best_v[ncolsX], nrowsX);
 	}
-	else if (nugget_length > 1) {
-		addNuggetMatrix(corr, fabs(best_v->data[numParams]), gp.nugget);
+	else if (nugget_length > 1) {   // nugget matrix
+		//printout("add nugget matrix");
+		addNuggetMatrixToPackedMatrix(corr, best_v[ncolsX], gp.nuggetMatrix, nrowsX);
 	}
-	// add minimum nugget
-	addNugget(corr, gp.min_nugget);
+	addNuggetToPackedMatrix(corr, gp.min_nugget, nrowsX);   // add minimum nugget
 
-	gsl_matrix *corrInv = gsl_matrix_alloc(X->size1,X->size1);
-	solve(corr, corrInv);
+	double *corrInv = MATRIX(nrowsX, nrowsX);
+	createIdentityMatrix(corrInv, nrowsX);
+	double *copyCorr = PACKED_MATRIX(nrowsX);
+	copyPackedMatrix(corr, copyCorr, nrowsX);
 
+	int info = LP_sym_pos_solve(copyCorr, nrowsX, corrInv, nrowsX);
+	if (info != 0) {  // singular or non-pos matrix!
+		printerr("ERROR: final var-cov matrix is singular!\n");
+		FREE_VECTOR(B);
+		FREE_VECTOR(v);
+		FREE_VECTOR(best_v);
+		FREE_VECTOR(v_save);
+		FREE_MATRIX(fX);
+		FREE_MATRIX(corr);
+		FREE_MATRIX(corrInv);
+		FREE_MATRIX(copyCorr);
+		return -1;
+	}
+	// copyCorr contains cholesky decomp, corrInv is corrInv
 	
-	gsl_matrix *bhat = gsl_matrix_alloc(fX->size2, 1);
-	calcBhat(fX, corrInv, Y, bhat);
-	gsl_matrix *mu_hat = gsl_matrix_alloc(fX->size1, bhat->size2);
-	matrix_multiply(fX, bhat, mu_hat);
+	double *bhat = VECTOR(ncolsfX);
 
-	sig2 = calcMLESig2(Y, mu_hat, corrInv);
-	gsl_matrix_scale(corr, sig2);
+	if (calcBhat(fX, nrowsX, ncolsfX, corrInv, Y, bhat) != 0) {
+		FREE_VECTOR(B);
+		FREE_VECTOR(v);
+		FREE_VECTOR(best_v);
+		FREE_VECTOR(v_save);
+		FREE_MATRIX(fX);
+		FREE_MATRIX(corr);
+		FREE_MATRIX(corrInv);
+		FREE_MATRIX(copyCorr);
+		FREE_VECTOR(bhat);
+		printerr("ERROR: final scaled var-cov matrix is singular in calcBhat!\n");
+		return -1;
+	}	
 
-	// free random number generator 
-	gsl_rng_free(rng);
+	double *mu_hat = MATRIX(nrowsX, ncolsfX);
+	matrix_multiply(fX, nrowsX, ncolsfX, bhat, ncolsfX, mu_hat);
+
+	sig2 = calcMLESig2(Y, mu_hat, corrInv, nrowsX);	
 
 	// create solution vector
 	int index = 0;
-	for (i = 0; i < fX->size2; i++) {
-		estimates[index] = bhat->data[i];
+	for (i = 0; i < ncolsfX; i++) {
+		estimates[index] = bhat[i];   // meanReg params
 		index++;
 	}
-	for (i = 0; i < B->size; i++) {
-		estimates[index] = B->data[i];
+	for (i = 0; i < ncolsX; i++) {
+		estimates[index] = B[i];     // corr params
 		index++;
 	}
-	estimates[index] = sig2;
+	estimates[index] = sig2;                   // sig2(GP)
 	index++;
 	// if necessary, add the true (unscaled) value of the nugget to the estimates list
-	if (nugget_length > 1 || nugget[0] > 0) {
-		estimates[index] = fabs(best_v->data[numParams]) * sig2;
+	if (nugget_length >= 1) {
+		estimates[index] = (best_v[ncolsX]) * sig2;
 	}
 
-	curtime = time(NULL);
-	loctime = localtime(&curtime);
+	FREE_VECTOR(B);
+	FREE_VECTOR(v);
+	FREE_VECTOR(best_v);
+	FREE_VECTOR(v_save); 
+	FREE_VECTOR(bhat);
+	FREE_MATRIX(fX);
+	FREE_MATRIX(corr);
+	FREE_MATRIX(corrInv);
+	FREE_MATRIX(copyCorr);
+	FREE_MATRIX(mu_hat);
+	return 0;
 
-		
 }
 
-void fitGPTest(double *in_X, double *in_Y, int *numObs, int *numParams) {
-//void fitGPTest(double *in_X, double *in_Y) {
-
-	printout("fitGPTest");
-	/**
-	gsl_matrix *X = gsl_matrix_alloc(*numObs, *numParams);
-	createMatrixByCol(in_X, *numObs, *numParams, X);
-	gsl_matrix *Y = gsl_matrix_alloc(*numObs, 1);
-	createMatrixByCol(in_Y, *numObs, *numParams, Y);
-	printMatrix(X, 0);
-	***/
+void fitGPTest(double *in_X, double *in_Y) {
+	printout("fitGPTest\n");
 }
+
 
 /*
-	fitGPfromR - the function actually called from R, that calls fitgp. See fitgp for parameter
+fitGPfromR - the function actually called from R, that calls fitGP. See fitGP for parameter
 		descriptions
 */
-void fitGPFromR (double *in_X, double *in_Y, int *numObs, int *numParams, int *constantMean, 
-	int *numSimplexTries, int *maxSimplexIterations, double *break_size, double *simplex_steps, 
-	int *maxBFGSIterations, double *BFGS_tol, double *BFGS_h, double *BFGS_steps, int *rng_seed, 
-	double *nugget, int *nugget_length, double *min_nugget, double *estimates, int *verbose) {
+void fitGPfromR(double *X, int *nrowsX, int *ncolsX, 
+	   double *Y, int *nrowsY, 
+	   int *constantMean, 
+	   int *numSimplexTries, int *maxSimplexIterations, double *simplex_abstol, double *simplex_reltol, 
+	   int *BFGS_max_iter, double *BFGS_tol, double *BFGS_h,  
+           int *rng_seed, 
+	   double *nugget, int *nugget_length, double *min_nugget, 
+	   double *estimates, int *verbose, int *ret) {
 
-	gsl_matrix *X = gsl_matrix_alloc(*numObs, *numParams);
-	createMatrixByCol(in_X, *numObs, *numParams, X);
-	gsl_matrix *Y = gsl_matrix_alloc(*numObs, 1);
-	createMatrixByCol(in_Y, *numObs, 1, Y);
+	   double *X_mat = MATRIX(*nrowsX, *ncolsX);
+	   createMatrixByCol(X, *nrowsX, *ncolsX, X_mat);
 
-	fitGP(X, Y, *numParams, *constantMean, *numSimplexTries, *maxSimplexIterations, *break_size, simplex_steps,
-		*maxBFGSIterations, *BFGS_tol, *BFGS_h, *BFGS_steps, *rng_seed, nugget, *nugget_length, *min_nugget, 
-		estimates, *verbose);
+	   *ret = fitGP(X_mat, *nrowsX, *ncolsX, Y, *nrowsY, *constantMean, 
+		 *numSimplexTries, *maxSimplexIterations, *simplex_abstol, *simplex_reltol,
+		 *BFGS_max_iter, *BFGS_tol, *BFGS_h,
+		 *rng_seed,
+		 nugget, *nugget_length, *min_nugget, estimates, *verbose);
 
-	gsl_matrix_free(X);
-	gsl_matrix_free(Y);
-	
+	   FREE_MATRIX(X_mat); 
 }
 
 #endif

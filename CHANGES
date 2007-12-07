@@ -1,6 +1,8 @@
 
-1.1 (10/6/2007)
+2.0 (12/7/2007)
+Removed dependence on GSL; uses R BLAS libraries for linear algebra routines
 
+1.1 (10/6/2007)
 Windows binary now available. However, user will have to download gsl and gslcblas dlls and put them on the path for mlegp to load
 
 

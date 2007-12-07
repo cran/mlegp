@@ -2,7 +2,6 @@
 
 %\VignetteIndexEntry{Examples: Gaussian process modeling and diagnostics}
 %\VignetteKeywords{mlegp}
-%\VignetteDepends{mlegp}
 %\VignettePackage{mlegp}
 
 \section{Examples: Gaussian process fitting and diagnostics}
@@ -11,7 +10,7 @@
 library(mlegp)
 @
 \subsection{A simple example}
-The function {\it mlegp} is used to fit Gaussian processes (GPs) to a vector or matrix of responses observed under the same set of design parameters. The example below shows how to fit multiple Gaussian processes to multiple outputs $z1$ and $z2$ for the design matrix $x$.
+The function {\it mlegp} is used to fit Gaussian processes (GPs) to a vector or matrix of responses observed under the same set of design parameters. Data can be input from within R or read from a text file using the command {\it read.table} (type '?read.table' from within R for more information). The example below shows how to fit multiple Gaussian processes to multiple outputs $z1$ and $z2$ for the design matrix $x$.
 Diagnostic plots are obtained using the {\it plot} function, which graphs observed values vs. cross-validated predicted values for each GP. The plot obtained from the code below appears in Figure (\ref{fig:diag1}).
 
 <<print=TRUE, echo=TRUE, results=hide, eval=TRUE>>=
@@ -45,39 +44,45 @@ fitMulti[[1]]
 In cases where the responses are heteroscedastic (have non-constant variance), it is possible to specify the diagonal nugget matrix up to a multiplicative constant. Future versions of {\it mlegp} will allow more complicated forms of the nugget matrix; currently, we recommend specifying the nugget matrix based on sample variances for replicate design points (which is easily obtained using the function {\it varPerReps}), or the use of prior information. In the example below, we demonstrate how to fit a Gaussian process with a constant nugget term and a Gaussian process where the diagonal nugget matrix is specified up to a multiplicative constant. First we generate heteroscedastic data, with variance related to the design parameter.   
 
 <<echo=TRUE, print=TRUE, results=hide, eval=TRUE>>=
-x = seq(0,6,by= 0.1)
-z = sin(x) + rnorm(length(x), sd = .10*x)          # variance is not constant
+x = seq(1,10,by=0.15)
+z = sin(x) + rnorm(length(x), sd = 0.2*x)   # variance is not constant
 @
 
 By default, a nugget term is automatically estimated if there are replicates in the design matrix, and is not estimated otherwise. However, one can estimate a nugget term by specifying an initial scalar value for the \lq nugget\rq\ argument during the call to
 {\it mlegp}. This is done in the code below.  
 
 <<echo=TRUE, print=TRUE, results=hide, eval=TRUE>>=
-fit1 = mlegp(x,z, nugget = (0.10*mean(x))**2, param.names = "x1")  # constant nugget (N=I)
+fit1 = mlegp(x,z, nugget = mean((0.2*x)**2))
 @
 Alternatively, one can set \lq nugget\rq\ equal to a vector corresponding to the diagonal nugget matrix as described in Section (\ref{sec:mlegp}). This allows the nugget matrix to be specified up to a multiplicative constant, and is demonstrated in the code below. 
 <<echo=TRUE, print=TRUE, results=hide, eval=TRUE>>=
-fit2 = mlegp(x,z, nugget = x**2, param.names = "x1")                # Aitken version (nugget is specified up to a constant)
+fit2 = mlegp(x,z, nugget = (.2*x)**2)
 @
 
-It is also possible to force a constant nugget term or the diagonal elements of the nugget matrix to have a minimum value by setting the argument \lq min.nugget\rq. This is especially important when the responses are noiseless, and in other situations when the variance-covariance matrix of the GP is not stable otherwise.
+It is also possible to force a constant nugget term or the diagonal elements of the nugget matrix to have a minimum value by setting the argument \lq min.nugget\rq. This is especially important when the responses are noiseless, and is useful insituations when the variance-covariance matrix of the GP is not stable.
 
-Finally, we compare the accuracy of each fitted GP using diagnostic plots. The diagnostic plots are constructed with the argument \lq type\rq\ equal to \lq 2\rq, which plots parameter values vs. cross-validated predictions. The output from the code is displayed in Figure (\ref{fig:nugget}). Note that when a constant nugget term is assumed, confidence bands are overly conservative for low values of $x1$ and are less likely to capture the observed responses for high values of $x1$.    
+Finally, we demonstrate the advantage of using a diagonal nugget matrix by comparing the correlations between the true response and predictions from each fitted GP, and providing diagnostic plots, whose output is displayed in Figure \ref{fig:nugget}). Importantly, predictions are biased when a constant nugget term is assumed.
 
-<<print = TRUE,results = hide, eval = FALSE>>=
+<<print = TRUE, results = verbatim, eval = TRUE>>=
+cor(sin(x), predict(fit1))
+cor(sin(x), predict(fit2))
+@
+
+<<print = TRUE, results = hide, eval = FALSE>>=
 par(mfrow = c(1,2))
-plot(fit1, type=2); lines(x,sin(x),lty=2)
-plot(fit2, type=2); lines(x,sin(x),lty=2)
+plot(fit1, type=1); lines(sin(x),sin(x),col = "blue")
+plot(fit2, type=1); lines(sin(x),sin(x),col = "blue")
 @
 
 \begin{figure}[htbp]
   \begin{center}
 <<fig=true, print = FALSE, echo = FALSE>>=
 par(mfrow = c(1,2))
-plot(fit1, type=2); lines(x,sin(x),lty=2)
-plot(fit2, type=2); lines(x,sin(x),lty=2)
+plot(fit1, type=1); lines(sin(x),sin(x),col = "blue")
+plot(fit2, type=1); lines(sin(x),sin(x),col = "blue")
 @
-    \caption{Diagnostic plots for Gaussian processes with constant nugget term (left) and diagonal nugget matrix (right). Open circles, cross-validated predictions; solid black lines, observed response; dotted black lines, the true (noiseless) response; solid red lines, confidence bands.}
+    \caption{Diagnostic plots for Gaussian processes with constant nugget term (left) and diagonal nugget matrix (right). Open circles, cross-validated predictions; solid black lines, observed response; solid blue line, true (noiseless) 
+response; solid red lines, confidence bands.}
 \label{fig:nugget}
   \end{center}
 \end{figure}

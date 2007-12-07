@@ -2,7 +2,6 @@
 
 %\VignetteIndexEntry{Gaussian process modeling background}
 %\VignetteKeywords{mlegp}
-%\VignetteDepends{mlegp}
 %\VignettePackage{mlegp}
 
 \section{Gaussian process modeling and diagnostics}

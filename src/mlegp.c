@@ -1,55 +1,70 @@
-
+#include <stdio.h>
 #include "matrix_vector.h"
 #include "gp.h"
 #include "fit_gp.h"
-
 #include "print.h"
-
-#ifdef __useR__
-#include <R_ext/Utils.h>
-#endif
 
 int main() {
 
+int i;
+int n = 5;
+double *C = PACKED_MATRIX(n);
 
-	gsl_matrix *x = gsl_matrix_alloc(10,1);
-	gsl_matrix *y = gsl_matrix_alloc(10,1);
-	double d_y[] = {1.8, 2.2, 3.2, 4.9, 5.29, 6.5, 7.8, 8.4, 9.0, 10.17};
-	int i = 0;
-	for (i = 0; i < 10; i++) {
-		x->data[i*x->tda+0] = i;
-		y->data[i*y->tda+0] = d_y[i];
-	}
-
-	double *stepSize = malloc(sizeof(double)*1);
-	*stepSize = 5.0;
-
-	// estimates for Beta, sig2GP, mu
-	/***/
-	int numEstimates = 3;
-	double *estimates = malloc(sizeof(double)*numEstimates);
-	for (i = 0; i < numEstimates; i++) {
-		estimates[i] = 0.0;
-	} 
-	/****/	
-
-	double *nugget = malloc(sizeof(double)*1);
-	*nugget = 0;
-
-	//fitGP(X,Y,numParams, constantMean, numSimplexTries, maxSimplexIter, break_size, simplex_steps, 
-	//	maxBFGSiter, BFGS_tol, BFGS_h, BFGS_steps, seed, nugget, nugget_length, min_nugget, estimates, verbose)	
-
-	fitGP(x,y,1,1,5,100,1e-10, stepSize, 
-			500, .01, 1e-10, .001, 0, nugget, 1, 0, estimates, 1);
-
-	printout("fitGP complete: final estimates (meanReg, Beta, sig2, ...):\n");
-	for (i = 0; i < numEstimates; i++) {
-		printout("%f  ", estimates[i]);
-	}
-	printout("\n\n");
-
-	return 1;
+for (i = 0; i < n*(n+1)/2; i++) {
+	C[i] = i;
 }
+
+printPackedMatrix("%6.2f ", C, n);
+addNuggetToPackedMatrix(C,10, n);
+printf("\n");
+printPackedMatrix("%6.2f ", C, n);
+
+double v[] = {1,2,3,4,5};
+addNuggetMatrixToPackedMatrix(C,1,v,n);
+printPackedMatrix("%6.2f ", C, n);
+
+printf("\n");
+int nrowsX = 10, ncolsX = 2;
+double vX[] = {1,2,3,4,5,1,2,3,4,5,1,1,1,1,1,2,2,2,2,2};
+double *X = MATRIX(nrowsX,ncolsX);
+createMatrixByCol(vX, nrowsX,ncolsX,X);
+printMatrix("%6.2f ", X, nrowsX,ncolsX, "X=");
+
+int nrowsY = nrowsX;
+double Y[] = { 2.3,  5,  6,  7.98,  8,  7.5,  8,  9.023, 10.1, 15.77};
+
+int constantMean = 1, numSimplexTries = 4, maxSimplexIterations = 100;
+double simplex_abstol = 1e-16, simplex_reltol = 1e-8; //, *simplex_steps = NULL;
+int  BFGS_max_iter = 5;
+double BFGS_tol = 0.01, BFGS_h = 0.01; //, BFGS_steps = 0.1;
+int rng_seed = 10;
+
+double nugget[1];
+nugget[0] = .01;
+int nugget_length = 1;
+double min_nugget = 0;
+
+int numParams = ncolsX + 1;  // corr params + nugget
+int length_estimates = numParams + 2; // add meanReg and sig2
+double *estimates = VECTOR(length_estimates);  
+int verbose = 2;
+
+fitGP(X, nrowsX, ncolsX, Y, nrowsY,  
+	constantMean, 
+	numSimplexTries, 
+	maxSimplexIterations, 
+	simplex_abstol, simplex_reltol,  
+	BFGS_max_iter, BFGS_tol, BFGS_h, rng_seed,
+	nugget, nugget_length,  min_nugget, estimates, verbose);
+
+FREE_MATRIX(C);
+FREE_MATRIX(X);
+FREE_VECTOR(estimates);
+
+return 0;
+
+}
+
 
 
 
