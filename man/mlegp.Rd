@@ -36,7 +36,7 @@ mlegp(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NULL,
 \details{
 This function calls the C function fitGPFromR which in turn calls fitGP (both in the file fit\_gp.h) to fit each Gaussian process.
 
-Separate Gaussian processes are fit to the observations in each column of \code{Z}. Maximum likelihood estimates for correlation and nugget parameters are found through numerical methods (i.e., the Nelder-Mead Simplex and the BFGS method), while maximum likelihood estimates of the mean regression parameters and overall variance are calculated in closed form (given the correlation and (scaled) nugget parameters). Multiple simplexes are run, and estimates from the best simplex are used as initial values to the gradient (BFGS) method. 
+Separate Gaussian processes are fit to the observations in each column of \code{Z}. Maximum likelihood estimates for correlation and nugget parameters are found through numerical methods (i.e., the Nelder-Mead Simplex and the L-BFGS method), while maximum likelihood estimates of the mean regression parameters and overall variance are calculated in closed form (given the correlation and (scaled) nugget parameters). Multiple simplexes are run, and estimates from the best simplex are used as initial values to the gradient (L-BFGS) method. 
 
 Gaussian processes are fit to principle component weights by utilizing the singular value decomposition (SVD) of \code{Z}, Z = UDVprime. Columns of \code{Z} should correspond to a single k-dimensional observation (e.g., functional output of a computer model, evaluated at a particular input)      
 
@@ -53,8 +53,6 @@ Santner, T.J. Williams, B.J., Notz, W., 2003. The Design and Analysis of Compute
 
 Heitmann, K., Higdon, D., Nakhleh, C., Habib, S., 2006. Cosmic Calibration. The Astrophysical Journal, 646, 2, L1-L4.
 
-\url{http://www.gnu.org/software/gsl/manual/html\_node/}
-
 \url{http://www.public.iastate.edu/~gdancik/mlegp/} 
 
 }
@@ -70,7 +68,8 @@ In some cases, the variance-covariance matrix is stable in C but not stable in R
 When fitting Gaussian processes to principle component weights, a minimum of two principle component weights must be used.
 
 }
-\seealso{ \code{\link{createGP}} for details of the \code{gp} object; \code{\link{gp.list}} for details of the \code{gp.list} object; \code{\link{mlegp-svd-functions}} for details on fitting Gaussian processes to high-dimensional data using principle component weights; the GNU scientific library manual for details on the multidimensional minimization algorithms used by the simplex method (gsl\_multimin\_fminimizer\_nmsimplex) and BFGS (gsl\_multimin\_fdfminimizer\_vector\_bfgs) method.
+\seealso{ \code{\link{createGP}} for details of the \code{gp} object; \code{\link{gp.list}} for details of the \code{gp.list} object; \code{\link{mlegp-svd-functions}} for details on fitting Gaussian processes to high-dimensional data using principle component weights; the L-BFGS method uses C code written by Naoaki Okazaki (http://www.chokkan.org/software/liblbfgs)  
+
 }
 \examples{
 
