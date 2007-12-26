@@ -1,0 +1,48 @@
+% -*- mode: noweb; noweb-default-code-mode: R-mode; -*-
+
+%\VignetteIndexEntry{Full User Manual}
+%\VignetteKeywords{mlegp}
+%\VignettePackage{mlegp}
+
+\documentclass[a4paper]{article}
+
+\title{mlegp: an R package for Gaussian process modeling and sensitivity analysis}
+\author{Garrett Dancik}
+
+\SweaveOpts{echo=FALSE}
+\usepackage{a4wide}
+\usepackage{natbib}
+\usepackage{amsmath}
+\usepackage{verbatim}
+\usepackage{hyperref}
+\begin{document}
+
+\maketitle
+
+\input{overview}
+\input{gp}
+\input{gp_ex}
+\input{SA}
+\input{SVD}
+
+\newpage
+\begin{thebibliography}{}
+\bibitem[Heitmann {\it et~al}., 2006]{Heitmann2006} Heitmann, K., Higdon, D., Nakhleh, C., Habib, S., 2006. Cosmic Calibrat
+ion, {\it The Astrophysical Journal}, {\bf646}, 2, L1-L4.
+\bibitem[Saltelli {\it et~al}., 2000]{Saltelli2000} Saltelli, A., Chan, K., Scott, E.M., 2000. Sensitivity analysis. (Chichester; New York: Wiley).
+\bibitem[Santner {\it et~al}., 2003]{Santner2003} Santner, T.J., Williams, B.J., Notz, W., 2003. The Design and Analysis of
+ Computer  Experiments       (New York: Springer).
+\bibitem[Schonlau and Welch, 2006] {Schonlau2006} Schonlau, M. and Welch, W., 2006. Screening the Input Variables to a Comp
+uter Model Via       Analysis of Variance and Visualization, in Screening: Methods for Experimentation in    Industry, Drug
+ Discovery, and Genetics. A. Dean and S. Lewis, eds. (New York:   Springer).
+\end{thebibliography}
+
+\section*{Programming Acknowledgements}
+\begin{itemize}
+\item C code for random number generation provided by Mutsuo Saito, Makoto Matsumoto and Hiroshima University (\url{http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT})
+\item C code for L-BFGS algorithm provided by Naoaki Okazaki (\url{http://www.chokkan.org/software/liblbfgs}) 
+\end{itemize}
+
+\end{document}
+
+

@@ -1,6 +1,8 @@
+2.2.1 (2/1/2008)
+If var-cov becomes singular in BFGS method, we will use estimates from simplex method
 
 2.2 (12/26/2007)
-We should not use absolute tolerance in simplex method; set abs.tol to -DBL_MAX to prevent early exit in nelder_mead.c; also fixed a bug so that minimum nugget is added correctly in mlegp and createGP
+We should not use absolute tolerance in simplex method; set abs.tol to -DBL_MAX to prevent early exit in nelder_mead.c
 
 2.0 (12/7/2007)
 Removed dependence on GSL; uses R BLAS libraries for linear algebra routines

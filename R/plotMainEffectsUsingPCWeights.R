@@ -56,10 +56,11 @@ xlab = "time", lower = NULL, upper = NULL, xValues = 1:dim(gp$UD)[1], ...) {
 	
 	if (graphStyle > 0) {	
 		blank = rep(" ", N)
+		title = paste(paste("Legend (", gp$params[holdIndex]), ")") 
 		temp <- legend("topright", legend = blank,
         		text.width = strwidth("1,000,000"),
 		        lty = 1:N, xjust = 1, yjust = 1,
-	        	title = "Legend (p1)")
+	        	title = title)
 		text(temp$rect$left + temp$rect$w, temp$text$y,param.values, pos=2)
 	}
 	par(xaxt = "s"); par(yaxt = "s")

@@ -108,9 +108,16 @@ struct tag_iteration_data {
 typedef struct tag_iteration_data iteration_data_t;
 
 static const lbfgs_parameter_t _defparam = {
-	6, 1e-5, 0, 20,
-	1e-20, 1e20, 1e-4, 0.9, 1.0e-16,
-	0.0,
+	6,         // m
+	1e-5,      // epsilon
+	0,         // max_iterations
+	20,        // max_linesearch
+	1e-20,     // min_step
+	1e20,      // max_step
+	1e-4,  	   // ftol
+	0.9,       // g_tol
+	1.0e-16,   // xtol
+	0.0,      // orthantwise
 };
 
 /* Forward function declarations. */

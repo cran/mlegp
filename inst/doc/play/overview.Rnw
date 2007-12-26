@@ -1,0 +1,9 @@
+% -*- mode: noweb; noweb-default-code-mode: R-mode; -*-
+
+%\VignetteIndexEntry{Overview of mlegp}
+%\VignetteKeywords{mlegp}
+%\VignettePackage{mlegp}
+
+\section{{\it mlegp}: an overview}
+Gaussian processes (GPs) are commonly used as surrogate statistical models for predicting output of computer experiments (\citealp{Santner2003}). Generlly, GPs are both interpolators and smoothers of data and are effective predictors when the response surface of interest is a smooth function of the parameter space. The package {\it mlegp} finds {\it m}aximum {\it l}ikelihood {\it e}stimates of {\it G}aussian {\it p}rocesses for univariate and multi-dimensional responses, for Gaussian processes with product exponential correlation structures; constant or linear regression mean functions; no nugget term, constant nugget terms, or a nugget matrix that can be specified up to a multiplicative constant. The latter is an extension of previous Gaussian process models and provides some flexibility for using GPs to model heteroscedastic responses. Diagnostic plotting functions, and the sensitivity analysis tools of Functional Analysis of Variance (FANOVA) decomposition, and plotting of main and two-way factor interaction effects are implemented. Multi-dimensional output can be modelled by fitting independent GPs to each dimension of output, or to the most important principle component weights following singular value decomposition of the output. Plotting of main effects for functional output is also implemented. From within R, a complete list of functions and vignettes can be obtained by calling \lq library(help = "mlegp")\rq.
+

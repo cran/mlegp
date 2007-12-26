@@ -1,0 +1,156 @@
+% -*- mode: noweb; noweb-default-code-mode: R-mode; -*-
+
+%\VignetteIndexEntry{Working with high-dimensional data (with examples)}
+%\VignetteKeywords{mlegp}
+%\VignettePackage{mlegp}
+
+\section{Multivariate Output and Dimension Reduction}\label{sec:SVD}
+\subsection{Background}
+For multivariate or functional output, singular value decomposition can be used to reduce the dimensionality of the response \citep{Heitmann2006}.
+Let $\left[z\right]_{i,j}$ , $i$ = 1, \dots, $k$, $j$ = 1, \dots, $m$ be a matrix of $m$ multivariate responses, where column $j$ of the matrix contains the $k$-dimensional output of the response corresponding to the input parameter $\theta^{(j)}$. Also let $r$ = min$(k,m)$. Using singular value decomposition, 
+\begin{equation}\label{eq:SVD}
+\left[z\right]_{i,j} = \left[U_{kxr}D_{rxr}V'_{rxm}\right]_{i,j} = \sum_{p=1}^{r} {\lambda_p \left\{\alpha_p\right\}_i   
+\left\{w_p(\theta)\right\}_j},
+\end{equation}
+where $\lambda_p$ is the $p^{th}$ singluar value, $\alpha_p$ is the $p^{th}$ column of $U$, and $w_p(\theta)$ is the $p^{th}$ row of $V'$. We will refer to the $j^{th}$ column of $V'$, which contains the elements \{$w_p(\theta)\}_j$, $p = 1, \dots, r$, as a vector of {\it principle component weights} corresponding to the $j^{th}$ observation. The output $z$ is approximated by keeping the $l$ < $r$ most important principle component weights, corresponding to the $l$ largest singular values. 
+For a response matrix $z$ as described above, {\it mlegp} fits independent Gaussian processes to the most important principle component weights. The number of principle component weights to be kept is specified through the argument \lq PC.num\rq; alternatively, setting the argument \lq PC.percent\rq \ will keep the most important principle component weights that account for \lq PC.percent\rq \ of the variation in the response. 
+
+\subsection{Examples}
+
+\subsubsection{Basics: Modeling functional output}
+The first example demonstrates the use of {\it mlegp} to fit GPs to principle component weights in order to model functional output. The functional responses are sinusoidal, consisting of 161 points, with a vertical offset determined by the design parameter $p$. We first create the functional responses and plot them. This output is displayed in Figure (\ref{fig:functionalOutput}). 
+
+<<PRINT=false, echo=FALSE, results=hide>>=
+library(mlegp)
+@
+<<PRINT=true, echo = TRUE>>=
+x = seq(-4,4,by=.05)
+p = 1:10
+y = matrix(0,length(p), length(x))
+for (i in 1:length(p)) {
+           y[i,] = sin(x) + .2*i + rnorm(length(x), sd  = .01)
+}
+@
+<<eval = FALSE>>=
+## we now have 10 functional observations (each of length 100) ##
+for (i in p) {
+	plot(x,y[i,], type = "l", col = i, ylim = c(min(y), max(y)))
+        par(new=TRUE)
+}
+@
+\begin{figure}[htbp]\label{fig:SVD1}
+  \begin{center}
+<<fig=true, echo = FALSE, print = FALSE>>=
+     ## we now have 10 functional observations (each of length 100) ##
+     for (i in p) {
+            plot(x,y[i,], type = "l", col = i, ylim = c(min(y), max(y)))
+            par(new=TRUE)
+     }
+@
+    \caption{An example of functional responses where the design parameter determines the vertical offset}
+    \label{fig:functionalOutput}	
+  \end{center}
+\end{figure}
+
+For functional output such as this, it is possible to fit separate GPs to each dimension. However, with 161 dimensions, this is not reasonable. In the code below, we first use the function {\it singularValueImportance} and see that the two most important principle component weights explain more than 99.99\% of the variation in the response. Then, we fit the GPs to these two principle component weights. Note that in the call to {\it mlegp} we take the transpose of the response matrix, so that columns correspond to the functional responses. 
+<<PRINT=TRUE, echo=TRUE,results=verbatim>>=
+     numPCs = 2
+     singularValueImportance(t(y))[numPCs]
+@
+<<PRINT=TRUE, echo=TRUE,results=hide >>=
+     fitPC = mlegp(p, t(y), PC.num = numPCs)
+@
+The GPs, which model principle component weights, can now be used to predict and analyze the functional response, based on the $UDV'$ matrix of equation (\ref{eq:SVD}). The $UD$ matrix corresponding to the principle component weights that are kept is saved as a component of the Gaussian process list object. The R code below demonstrates use of the {\it predict} method to reconstruct (approximately) the original functional output. 
+<<PRINT=TRUE, echo=TRUE,results=hide >>=
+     ## reconstruct the output Y = UDV'
+     Vprime = matrix(0,numPCs,length(p))
+     Vprime[1,] = predict(fitPC[[1]])
+     Vprime[2,] = predict(fitPC[[2]])
+     predY = fitPC$UD %*% Vprime
+@
+\subsubsection{Calculating main effects}
+The function {\it plotMainEffects} visualizes main effects of design parameters on functional output for GPs fit to principle component weights. This is demonstrated below, for the Gaussian processes that were fit above. The graphical plot is displayed in Figure (\ref{fig:SVD2}).
+
+<<PRINT=TRUE, echo=TRUE,eval = FALSE >>=
+plotMainEffects(fitPC, effect = 1, graphStyle=1)
+@
+\begin{figure}[htbp]
+  \begin{center}
+<<fig=true, PRINT=FALSE, echo=FALSE>>=
+plotMainEffects(fitPC, effect = 1, graphStyle=1)
+@
+    \caption{Main effect of $p1$ on functional output, based on Gaussian process modeling of the two most important principle component weights.}
+    \label{fig:SVD2}
+  \end{center}
+\end{figure}
+
+\subsubsection{Modeling high dimensional (and not necessarily functional) data}
+Although the above example involves functional output, the singular value decomposition technique can applied generally to any multi-dimensional response. One can also use {\it mlegp} to analyze non-functional data of high-dimension, as well as multiple functional responses, by manipulating the output of {\it predict} and calling {\it plotMainEffects} functions with \lq no.plot\rq = \lq TRUE\rq, which returns the main effects without plotting them. In our final example, we consider {\it two} sets of functional outputs: the sinusoidal response $y1$ and the linear response $y2$. Both responses depend on the design parameter $p$. After combining the output vectors $y1$ and $y2$, we fit Gaussian processes to the most important principle component weights that explain at least 99.999\% of the variation in output.
+
+<<PRINT=TRUE, echo = TRUE, results=hide>>=
+p = 1:10
+x1 = seq(-4,4,by=.05)
+x2 = 1:5
+y1 = matrix(0,length(p), length(x1))
+y2 = matrix(0,length(p), length(x2))
+for (i in 1:length(p)) {
+           y1[i,] = sin(x1) + .2*p[i] + rnorm(length(x1), sd  = .01)
+	   y2[i,] = .1*p[i] + x2 +rnorm(length(x2), sd = 0.01)
+     }
+## put the output in matrix form (each row corresponds to output from the model, first y1 then y2 ##
+y = cbind(y1,y2)
+fitPC = mlegp(p, t(y), PC.percent = 99.999)
+@
+
+
+Plotting main effects for the different types of responses is now a matter of retrieving all of the main effects from {\it plotMainEffects}, and breaking this predicted effect into the separate main effects for the two responses of interest. Main effects for both responses are displayed in Figure (\ref{fig:SVD3}).
+
+<<PRINT = TRUE, echo = TRUE, fig=true, eval=FALSE>>=
+main = plotMainEffects(fitPC, effect = 1, no.plot = TRUE)
+preds = main$preds
+beg1 = 1; end1 = length(x1)
+beg2 = end1+1; end2 = beg2+length(x2)-1
+par(mfrow = c(1,2))
+## plot the main effect for y1 ##
+for (i in 1:dim(preds)[1]) {
+	plot(x1, preds[i,beg1:end1], ylim = c(min(preds[,beg1:end1]), max(preds[,beg1:end1])), type="l", col = i,
+		xlab = "x1", ylab = "y1", main = "main effect on y1")
+	par(new=TRUE)
+}
+par(new=FALSE)
+## plot the main effect for y2 ##
+for (i in 1:dim(preds)[1]) {
+	plot(x2, preds[i,beg2:end2], ylim = c(min(preds[,beg2:end2]), max(preds[,beg2:end2])), type="l", col = i, 
+		xlab = "x2", ylab = "y2", main = "main effect on y2")
+	par(new=TRUE)
+}
+@
+
+\begin{figure}[h]
+  \begin{center}
+<<PRINT = FALSE, echo = FALSE, fig=true, eval=TRUE>>=
+main = plotMainEffects(fitPC, effect = 1, no.plot = TRUE)
+preds = main$preds
+beg1 = 1; end1 = length(x1)
+beg2 = end1+1; end2 = beg2+length(x2)-1
+par(mfrow = c(1,2))
+## plot the main effect for y1 ##
+for (i in 1:dim(preds)[1]) {
+	plot(x1, preds[i,beg1:end1], ylim = c(min(preds[,beg1:end1]), max(preds[,beg1:end1])), type="l", col = i, lty = i,
+		xlab = "x1", ylab = "y1", main = "main effect on y1")
+	par(new=TRUE)
+}
+par(new=FALSE)
+## plot the main effect for y2 ##
+for (i in 1:dim(preds)[1]) {
+	plot(x2, preds[i,beg2:end2], ylim = c(min(preds[,beg2:end2]), max(preds[,beg2:end2])), type="l", col = i, lty = i,
+		xlab = "x2", ylab = "y2", main = "main effect on y2")
+	par(new=TRUE)
+}
+@
+    \caption{Main effects of the parameter $p$ on functional responses $y1$ (left) and $y2$ (right). Values of $p$ are 1 (black solid lines), 5.5 (red dashed lines), and 10 (green dotted lines). }
+    \label{fig:SVD3}	
+  \end{center}
+\end{figure}
+
+

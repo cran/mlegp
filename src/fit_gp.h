@@ -521,6 +521,8 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 
 	}
 
+	double *best_v_from_simplex = VECTOR(v_length);
+	vectorCopy(best_v, best_v_from_simplex, v_length);
 	if (verbose > 0 && maxit > 0 ) {
 		printout("\nusing BFGS method from simplex #%d...\n", best_try);
 	}
@@ -544,6 +546,11 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 
 	///// REPORT RESULTS ////
 	fval = f_min(v_length, best_v, (void *) &gp);  // do this while estimates are still on log scale
+	if (isnan(fval) || fval == DBL_MAX) {      // if lbfgs method does is not successful, use nelder mead result
+		vectorCopy(best_v_from_simplex, best_v, v_length);
+		fval = f_min(v_length, best_v, (void *) &gp);  // do this while estimates are still on log scale
+	}
+
 	if (verbose) printout("\nMaximum likelihood estimates found, log like =  %f\n", -fval);   
 
 	// put best estimates on actual scale
@@ -571,7 +578,6 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	addNuggetToPackedMatrix(corr, gp.min_nugget, nrowsX);   // add minimum nugget
 ***/
 
-
    	if (gp.nuggetMatrix != NULL) addNuggetMatrixToPackedMatrix(corr, best_v[gp.ncolsX], gp.nuggetMatrix, gp.nY);
         else if (gp.estimateNugget == 1) addNuggetToPackedMatrix(corr, best_v[gp.ncolsX], gp.nY);
         addNuggetToPackedMatrix(corr, gp.min_nugget, gp.nY); // add the minimum nugget
@@ -588,6 +594,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 		FREE_VECTOR(B);
 		FREE_VECTOR(v);
 		FREE_VECTOR(best_v);
+		FREE_VECTOR(best_v_from_simplex);
 		FREE_VECTOR(v_save);
 		FREE_MATRIX(fX);
 		FREE_MATRIX(corr);
@@ -603,6 +610,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 		FREE_VECTOR(B);
 		FREE_VECTOR(v);
 		FREE_VECTOR(best_v);
+		FREE_VECTOR(best_v_from_simplex);
 		FREE_VECTOR(v_save);
 		FREE_MATRIX(fX);
 		FREE_MATRIX(corr);
@@ -642,6 +650,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	FREE_VECTOR(B);
 	FREE_VECTOR(v);
 	FREE_VECTOR(best_v);
+	FREE_VECTOR(best_v_from_simplex);
 	FREE_VECTOR(v_save); 
 	FREE_VECTOR(bhat);
 	FREE_MATRIX(fX);
