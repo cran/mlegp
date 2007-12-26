@@ -365,7 +365,7 @@ fitGP - the driver function that finds mles for gp parameters; we run 'numSimple
 		(linear regression in X with intercept added)
 	int numSimplexTries - the number of simplexes to run before moving to bfgs method
 	int maxSimplexIterations - maximum number of iterations / simplex
-	double simplex_abstol - absolute tolerance for simplex
+	double simplex_abstol - absolute tolerance for simplex (will be set to -DBL_MAX)
 	double simplex_reltol - relative tolerance of simplex
 	int BFGS_max_iter - max # of iterations for bfgs method
 	double BFGS_tol - stopping criteria for bfgs method; minimization terminates when 
@@ -393,6 +393,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	   double *estimates, int verbose) {
 
 	init_gen_rand(rng_seed);
+	simplex_abstol = -DBL_MAX;
 
 	if (nrowsX != nrowsY) {
 		printerr("ERROR: number of observations does not match number of design points\n");
@@ -465,7 +466,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 
 	int simplex_try;
 	double fval = 0;
-	double best_fval = 999999999999999;
+	double best_fval = DBL_MAX;
 	int best_try = 0;
 	double *best_v = VECTOR(v_length);
 	double *v_save = VECTOR(v_length);
@@ -485,7 +486,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 		}
 	
 		if (v_length > ncolsX) {     // we are estimating a nugget term
-			v[ncolsX] = initial_scaled_nugget;
+			v[ncolsX] = initial_scaled_nugget;   
 		}
 
 		// put all initial param values on the log scale
@@ -533,10 +534,12 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	int ret;
 	if (BFGS_params->max_iterations > 0) {
 		if (verbose == 0) ret = lbfgs(v_length, best_v, fdf_evaluate, NULL, (void *) &gp, BFGS_params);
-		else ret = lbfgs(v_length, best_v, fdf_evaluate, BFGS_progress, (void *) &gp, BFGS_params);
-		/* Report the result. */
-		printout("...L-BFGS method complete\n");
-		printBFGSReturnMsg(ret);
+		else {
+			ret = lbfgs(v_length, best_v, fdf_evaluate, BFGS_progress, (void *) &gp, BFGS_params);
+			/* Report the result. */
+			printout("...L-BFGS method complete\n");
+			printBFGSReturnMsg(ret);
+		}
 	}
 
 	///// REPORT RESULTS ////
@@ -556,6 +559,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	double *corr = PACKED_MATRIX(nrowsX);	
 	createCorrMatrix(X, B, corr, nrowsX, ncolsX); 
 
+/***
 	if (nugget_length == 1 && nugget[0] > 0) {     // constant nugget
 		//printout("add constant nugget");
 		addNuggetToPackedMatrix(corr, best_v[ncolsX], nrowsX);
@@ -565,6 +569,13 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 		addNuggetMatrixToPackedMatrix(corr, best_v[ncolsX], gp.nuggetMatrix, nrowsX);
 	}
 	addNuggetToPackedMatrix(corr, gp.min_nugget, nrowsX);   // add minimum nugget
+***/
+
+
+   	if (gp.nuggetMatrix != NULL) addNuggetMatrixToPackedMatrix(corr, best_v[gp.ncolsX], gp.nuggetMatrix, gp.nY);
+        else if (gp.estimateNugget == 1) addNuggetToPackedMatrix(corr, best_v[gp.ncolsX], gp.nY);
+        addNuggetToPackedMatrix(corr, gp.min_nugget, gp.nY); // add the minimum nugget
+
 
 	double *corrInv = MATRIX(nrowsX, nrowsX);
 	createIdentityMatrix(corrInv, nrowsX);
@@ -602,8 +613,8 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 		return -1;
 	}	
 
-	double *mu_hat = MATRIX(nrowsX, ncolsfX);
-	matrix_multiply(fX, nrowsX, ncolsfX, bhat, ncolsfX, mu_hat);
+	double *mu_hat = MATRIX(nrowsX, 1);
+	matrix_multiply(fX, nrowsX, ncolsfX, bhat, 1, mu_hat);
 
 	sig2 = calcMLESig2(Y, mu_hat, corrInv, nrowsX);	
 
@@ -620,9 +631,13 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	estimates[index] = sig2;                   // sig2(GP)
 	index++;
 	// if necessary, add the true (unscaled) value of the nugget to the estimates list
-	if (nugget_length >= 1) {
+	if (gp.estimateNugget == 1) {
 		estimates[index] = (best_v[ncolsX]) * sig2;
+		index++;
 	}
+
+	//printout("final estimates:\n");
+	//printVector("%6.4f ", estimates, index);
 
 	FREE_VECTOR(B);
 	FREE_VECTOR(v);

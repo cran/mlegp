@@ -8,7 +8,7 @@
 \usage{
 mlegp(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NULL, gp.names = NULL, 
 	PC.UD = NULL, PC.num = NULL, PC.percent = NULL, 
-	simplex.ntries = 5, simplex.maxiter = 100, simplex.abstol = 1e-16, simplex.reltol = 1e-8,  
+	simplex.ntries = 5, simplex.maxiter = 500, simplex.reltol = 1e-8,  
 	BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, seed = 0, verbose = 1)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -24,8 +24,7 @@ mlegp(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NULL,
   \item{PC.num}{ the number of principle component weights to keep in the singular value decomposition of \code{Z} }
   \item{PC.percent}{ if not \code{NULL} the number of principle component weights kept is the minimum number that accounts for \code{PC.percent} of the total variance of the matrix \code{Z} }
   \item{simplex.ntries}{ the number of simplexes to run }
-  \item{simplex.maxiter}{ maximum number of iterations / simplex }
-  \item{simplex.abstol}{ absolute tolerance for simplex method, defaulting to 1e-8 }
+  \item{simplex.maxiter}{ maximum number of evaluations / simplex }
   \item{simplex.reltol}{ relative tolerance for simplex method, defaulting to 1e-16 }
   \item{BFGS.maxiter}{ maximum number of iterations for BFGS method }
   \item{BFGS.tol}{ stopping condition for BFGS method is when norm(gradient) < BFGS.tol * max(1, norm(x)), where x is the parameter vector and norm is the Euclidian norm }

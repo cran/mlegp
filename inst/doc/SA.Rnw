@@ -29,7 +29,7 @@ library(mlegp)
 <<print=TRUE, echo = TRUE, results = hide>>=
 x1 = kronecker(seq(0,1,by=.25), rep(1,5))
 x2 = rep(seq(0,1,by=.25),5)
-y = 4*x1 - 2 * x2 + x1*x2
+y = 4*x1 - 2 * x2 + x1*x2 + rnorm(length(x1), sd = .001)
 fit = mlegp(cbind(x1,x2), y, param.names = c("x1", "x2"))
 @
 <<print = TRUE, echo = TRUE, results = verbatim>>=

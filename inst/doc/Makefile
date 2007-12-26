@@ -43,7 +43,7 @@ SA.ps: mlegp.dvi
 	dvips -Pwww -pp6-9 -t letter mlegp.dvi -o SA.ps
 
 SVD.ps: mlegp.dvi
-	dvips -Pwww -pp10-15 -t letter mlegp.dvi -o SVD.ps
+	dvips -Pwww -pp9-15 -t letter mlegp.dvi -o SVD.ps
 
 overview.ps: mlegp.dvi
 	dvips -Pwww -pp1 -t letter mlegp.dvi -o overview.ps

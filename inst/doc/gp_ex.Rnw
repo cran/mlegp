@@ -45,7 +45,7 @@ In cases where the responses are heteroscedastic (have non-constant variance), i
 
 <<echo=TRUE, print=TRUE, results=hide, eval=TRUE>>=
 x = seq(1,10,by=0.15)
-z = sin(x) + rnorm(length(x), sd = 0.2*x)   # variance is not constant
+z = sin(x) + rnorm(length(x), sd = 0.20*x)   # variance is not constant
 @
 
 By default, a nugget term is automatically estimated if there are replicates in the design matrix, and is not estimated otherwise. However, one can estimate a nugget term by specifying an initial scalar value for the \lq nugget\rq\ argument during the call to

@@ -1,7 +1,7 @@
 `mlegp` <-
 function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NULL, gp.names = NULL, 
 	PC.UD = NULL, PC.num = NULL, PC.percent = NULL, 
-	simplex.ntries = 5, simplex.maxiter = 100, simplex.abstol = 1e-16, simplex.reltol = 1e-8,  
+	simplex.ntries = 5, simplex.maxiter = 500, simplex.reltol = 1e-8,  
 	BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, seed = 0, verbose = 1) {
 
 	X = as.matrix(X)
@@ -109,6 +109,8 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 		if (anyReps(X)) nugget = estimateNugget(X,Z[,i] )	
 		
 	    }
+
+	    simplex.abstol = -99999
 
 	    success = 0
 	    estimates = rep(0,numEstimates)
