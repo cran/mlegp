@@ -311,12 +311,12 @@ switch(x) {
         case LBFGSERR_MAXIMUMSTEP:               // line search step became larger than lbfgs_parameter_t::max_step
 		return;
         default: 
-		printerr("L-BFGS warning: ");
+		printout("L-BFGS warning: ");
 		if (x == LBFGSERR_LOGICERROR) printerr("logic error\n");
 		else if (x == LBFGSERR_OUTOFMEMORY) printerr("ERROR: out of memory\n");
-		else if (x == LBFGSERR_MAXIMUMLINESEARCH) printerr("line search routine reached max # of evaluations\n");
+		else if (x == LBFGSERR_MAXIMUMLINESEARCH) printout("line search routine reached max # of evaluations\n");
 		else if (x == LBFGSERR_WIDTHTOOSMALL) 
-			printerr("relative width of interval of uncertainty is at most lbfgs_parameter_t::xtol\n");
+			printout("relative width of interval of uncertainty is at most lbfgs_parameter_t::xtol\n");
 		/************** check input parameters***************************************************************/
 		else if (x == LBFGSERR_INVALID_N) printerr("invalid number of variables specified\n");
 		else if (x == LBFGSERR_INVALID_N_SSE) printerr("invalid number of variables (for SSE) specified\n"); 
@@ -335,14 +335,14 @@ switch(x) {
 			printerr("invalid parameter lbfgs_parameter_t::orthantwise_c specified\n");
 		else if (x == LBFGSERR_INVALIDPARAMETERS) printerr("logic error (negative line-search step) occurred\n");
 		/****************************************************************************************************/
-		else if (x == LBFGSERR_OUTOFINTERVAL) printerr("line search step went out of interval of uncertainty\n");
+		else if (x == LBFGSERR_OUTOFINTERVAL) printout("line search step went out of interval of uncertainty\n");
 		else if (x == LBFGSERR_INCORRECT_TMINMAX) 
-			printerr("logic error occured or interval of uncertainty became too small\n");
+			printout("logic error occured or interval of uncertainty became too small\n");
 		else if (x == LBFGSERR_MAXIMUMITERATION) 
-			printerr("algorithm reaches maximum # of iterations\n");
+			printout("algorithm reaches maximum # of iterations\n");
 		else if (x == LBFGSERR_INCREASEGRADIENT) 
-			printerr("current search direction increases object function value\n");
-		else printerr("warning: unknown error message\n");
+			printout("current search direction increases object function value\n");
+		else printerr("warning: unknown error message returned from lbfgs\n");
 	}
 	/************************ NOT USED ********************
 	else if (x == LBFGSERR_CANCELED) printerr("canceled by user\n");
@@ -524,7 +524,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	double *best_v_from_simplex = VECTOR(v_length);
 	vectorCopy(best_v, best_v_from_simplex, v_length);
 	if (verbose > 0 && maxit > 0 ) {
-		printout("\nusing BFGS method from simplex #%d...\n", best_try);
+		printout("\nusing L-BFGS method from simplex #%d...\n", best_try);
 	}
 
 	lbfgs_parameter_t *BFGS_params = malloc(sizeof(lbfgs_parameter_t));
@@ -549,6 +549,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	if (isnan(fval) || fval == DBL_MAX) {      // if lbfgs method does is not successful, use nelder mead result
 		vectorCopy(best_v_from_simplex, best_v, v_length);
 		fval = f_min(v_length, best_v, (void *) &gp);  // do this while estimates are still on log scale
+	        printout("warning: log likelihood in L-BFGS method returns NaN; estimates from simplex method will be used\n"); 
 	}
 
 	if (verbose) printout("\nMaximum likelihood estimates found, log like =  %f\n", -fval);   

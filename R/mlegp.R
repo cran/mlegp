@@ -167,6 +167,10 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 	    if (verbose > 0) cat("creating gp object...")
 	    fit1 = createGP(X, as.matrix(Z[,i]), beta, a, meanReg, sig2, nugget, 
 		param.names = param.names, constantMean = constantMean)
+	    if(is.null(fit1)) {
+		cat("GP #"); cat(i); cat(" cannot be created...exiting mlegp\n")
+		return (NULL)
+	    } 	
 	    if (verbose > 0) cat("...done\n\n")
 
 	    l[[i]] = fit1

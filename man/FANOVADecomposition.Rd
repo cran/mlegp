@@ -69,6 +69,6 @@ FANOVADecomposition(fit)
 
 ## Round contributions to 3 digits ##
 nice(FANOVADecomposition(fit), 3)
-}
+} ### end don't run
 }
 \keyword{ htest }

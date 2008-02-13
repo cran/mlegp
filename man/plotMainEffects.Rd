@@ -79,14 +79,18 @@ Additional arguments (described below) will vary depending on whether \code{gp} 
 \seealso{ \code{\link{FANOVADecomposition}} for quantifying the importance of main effects }
 \examples{
 
-
 ## fit a Gaussian process ##
 x1 = rep(-5:5,3); x2 = kronecker(1:3, rep(1,11))
 y = sin(x1) + 2*x2 + rnorm(length(x1),sd=.001)
 fit = mlegp(cbind(x1,x2), y)
 
 ## plot all main effects
+plotMainEffects(fit) 
+
+\dontrun{   ## library adapt must be loaded for FANOVA=TRUE 
+## plot all main effects with FANOVA contributions in legend
 plotMainEffects(fit, FANOVA = TRUE) 
+}
 
 ## plotMainEffects for x2 'manually'
 main = plotMainEffects(fit, effects = 2, no.plot=TRUE)

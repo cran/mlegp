@@ -30,10 +30,14 @@ function(X, Z, beta, a, meanReg, sig2, nugget,
 		orig.nugget = nugget
 		count = 1
 		while(class(gp$invVarMatrix) == "try-error" && count < 1000) {
-			nugget = nugget * 2
+			nugget = 2*nugget + 1e-7
         		gp$invVarMatrix = try(solve(calcVarMatrix(X, beta, a, nugget,sig2,0, dim(X)[1])),TRUE)
 			count = count + 1
 		}
+                if (count == 1000) {
+			cat("\nERROR: final variance-covariance matrix is singular in R; try fitting setting min.nugget\n")
+			return (NULL)
+	        }
 		if (count > 1) {
 			cat("\nwarning: nugget has been changed to make var-cov matrix more stable\n")
 			cat("from ")
