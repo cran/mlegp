@@ -8,7 +8,7 @@
 
 }
 \usage{
-plot.gp.list(x, sds = 1, CI.at.point = FALSE, ...)
+\method{plot}{gp.list}(x, sds = 1, CI.at.point = FALSE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

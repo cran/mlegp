@@ -7,7 +7,7 @@
   Cross-Validated Diagnostic Plots for Gaussian Processes
 }
 \usage{
-plot.gp(x, type = 0, params = NULL, sds = 1, CI.at.point = FALSE, ...)
+\method{plot}{gp}(x, type = 0, params = NULL, sds = 1, CI.at.point = FALSE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

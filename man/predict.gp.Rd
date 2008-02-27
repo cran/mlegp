@@ -11,7 +11,7 @@
   Gaussian Process Predictions
 }
 \usage{
-predict.gp(object, newData = object$X, se.fit = FALSE, ...)
+\method{predict}{gp}(object, newData = object$X, se.fit = FALSE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

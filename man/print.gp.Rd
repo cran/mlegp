@@ -6,7 +6,7 @@
   prints a summary of a Gaussian process object
 }
 \usage{
-print.gp(x, ...)
+\method{print}{gp}(x, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

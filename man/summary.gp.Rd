@@ -5,7 +5,7 @@
   prints a summary of a Gaussian process object 
 }
 \usage{
-summary.gp(object, ...)
+\method{summary}{gp}(object, ...)
 }
 \arguments{
   \item{object}{ an object of class \code{gp} }

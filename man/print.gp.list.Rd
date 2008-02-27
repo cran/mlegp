@@ -6,7 +6,7 @@
   prints a summary of a Gaussian process list object, or (a subset) of its components
 }
 \usage{
-print.gp.list(x, nums = NULL, ...)
+\method{print}{gp.list}(x, nums = NULL, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
