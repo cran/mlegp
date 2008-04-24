@@ -1,6 +1,8 @@
+2.2.4 (4/24/2008)
+Makevars files use PKG_CPPFLAGS instead of PKGCFLAGS
+
 2.2.1 (2/1/2008)
 If var-cov becomes singular in BFGS method, we will use estimates from simplex method
-
 2.2 (12/26/2007)
 We should not use absolute tolerance in simplex method; set abs.tol to -DBL_MAX to prevent early exit in nelder_mead.c
 

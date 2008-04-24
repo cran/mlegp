@@ -1,4 +1,4 @@
-PKG_CFLAGS = -D__useR__ -DMEXP=607
+PKG_CPPFLAGS = -D__useR__ -DMEXP=607
 PKG_LIBS = -lRlapack -lRblas -lm -lg2c   
 
 

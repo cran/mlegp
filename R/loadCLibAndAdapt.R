@@ -11,7 +11,7 @@
                 cat("loading recommended package: adapt\n")
         }
         else {
-                cat("warning: error loading package adapt\n")
+                cat("warning: package adapt could not be loaded\n")
                 cat("the following functions will not be available: FANOVADecomposition, plotInteractionEffects\n")
         }
 }
