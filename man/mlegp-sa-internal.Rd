@@ -20,6 +20,6 @@
 	and should not be called by the user. Some of these require the library \code{adapt}.
 }
 \references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \keyword{ internal }
 \keyword{ htest }

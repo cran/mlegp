@@ -40,7 +40,7 @@ plotInteractionEffect(gp, effects, length1.out = 21, length2.out = 21,
 
 \url{http://www.public.iastate.edu/~gdancik/mlegp/}
 }
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \seealso{ \code{\link{FANOVADecomposition}} for quantifying the importance of an interaction effect
 }
 \examples{

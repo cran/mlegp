@@ -37,7 +37,7 @@ FANOVADecomposition(gp, Interaction = TRUE, verbose = TRUE, outputs = NULL, maxp
 }
 
 
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \note{ 
      This function requires the library \code{adapt}  
 

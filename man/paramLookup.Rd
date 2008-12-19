@@ -28,7 +28,7 @@ if \code{m[i]} is not an element of \code{string}, \code{toParamIndexes} will di
 
 }
 \references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \note{  
   this function does not need to be called by the user; it exists so that the user can pass in a vector of parameter numbers or parameter names to various functions when specifying a subset of the parameters of the Gaussian process design matrix
   

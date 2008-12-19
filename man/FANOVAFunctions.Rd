@@ -48,7 +48,7 @@ ANOVAInteractionEffect(gp, effectNums, mu0 = NULL, lower = apply(gp$X, 2, min), 
 \url{http://www.public.iastate.edu/~gdancik/mlegp/}
 
 } 
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \note{ 
 
      If R starts to hang, changing the default value of \code{maxpts} is needed (though convergence no longer guaranteed)

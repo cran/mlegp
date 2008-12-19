@@ -22,7 +22,7 @@ CV(gp, predictObserved = TRUE, verbose = FALSE)
   a matrix where the first column corresponds to the cross-validated predictions and the second column corresponds to the variance of the cross-validated predictions
 }
 \references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \seealso{ \code{\link{predict.gp}} }
 \examples{
 

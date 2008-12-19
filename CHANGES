@@ -1,3 +1,6 @@
+2.2.5 (12/19/2008)
+Updated contact information
+
 2.2.4 (4/24/2008)
 Makevars files use PKG_CPPFLAGS instead of PKGCFLAGS
 

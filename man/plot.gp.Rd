@@ -32,7 +32,7 @@ Where relevant, open circles correspond to Gaussian process predictions, black l
 }
 }
 \references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \seealso{ \code{\link{CV}} for cross-validation, \code{\link{plot.gp.list}} for plotting \code{gp.list} objects }
 \examples{
 

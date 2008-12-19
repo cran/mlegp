@@ -25,7 +25,7 @@ Multi-dimensional output can be modelled by fitting independent GPs to each outp
 For a complete list of functions, use 'library(help="mlegp")'.
 
 }
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \references{
 
 Santner, T.J. Williams, B.J., Notz, W., 2003. The Design and Analysis of Computer Experiments (New York: Springer).

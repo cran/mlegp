@@ -75,7 +75,7 @@ Additional arguments (described below) will vary depending on whether \code{gp} 
 \url{http://www.public.iastate.edu/~gdancik/mlegp/}
 
 }
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \seealso{ \code{\link{FANOVADecomposition}} for quantifying the importance of main effects }
 \examples{
 

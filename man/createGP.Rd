@@ -43,7 +43,7 @@ createGP(X, Z, beta, a, meanReg, sig2, nugget, param.names = 1:dim(X)[2], consta
 }
 
 \references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \note{ this function is called by \code{mlegp} and should not be called by the user }
 \seealso{ \code{\link{mlegp}} }
 \keyword{ internal }

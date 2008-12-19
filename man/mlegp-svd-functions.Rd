@@ -47,7 +47,7 @@ numSingularValues(Y, cutoff = 99)
 \url{http://www.public.iastate.edu/~gdancik/mlegp/} 
 }
 
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 
 \note{ these functions are utilized by \code{mlegp} to fit Gaussian processes to principle component weights}
 \seealso{ \code{\link{mlegp}}} 

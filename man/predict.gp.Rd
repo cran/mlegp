@@ -35,7 +35,7 @@
   \item{se.fit}{standard error of the predictions}
 }
 \references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
-\author{ Garrett M. Dancik \email{ gdancik@iastate.edu } }
+\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \note{ for predictions with \code{gp.list} objects, call \code{predict.gp} separately for each gp in the list
 }
 \seealso{For cross-validated predictions, see \code{\link{CV}}  }
