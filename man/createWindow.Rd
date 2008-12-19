@@ -19,7 +19,7 @@ createWindow(n)
 This function is called by \code{mlegp} plotting functions that construct separate graphs for multiple parameters
 
 }
-\references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
+\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
 \author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \seealso{ This function may be used by \code{\link{plot.gp}}, \code{\link{plotMainEffects}}, among others }
 \keyword{ internal }

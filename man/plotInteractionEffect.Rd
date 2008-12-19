@@ -38,7 +38,7 @@ plotInteractionEffect(gp, effects, length1.out = 21, length2.out = 21,
 }
 \references{ Schonlau, M. and Welch, W. 2006. Screening the Input Variables to a Computer Model Via Analysis of Variance and Visualization, in Screening: Methods for Experimentation in Industry, Drug Discovery, and Genetics. A Dean and S. Lewis, eds. (New York: Springer).  
 
-\url{http://www.public.iastate.edu/~gdancik/mlegp/}
+\url{http://users.nsula.edu/dancikg/mlegp/}
 }
 \author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \seealso{ \code{\link{FANOVADecomposition}} for quantifying the importance of an interaction effect

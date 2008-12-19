@@ -44,7 +44,7 @@ numSingularValues(Y, cutoff = 99)
 }
 \references{ Heitmann, K., Higdon, D., Nakhleh, C., Habib, S., 2006. Cosmic Calibration. The Astrophysical Journal, 646, 2, L1-L4.
 
-\url{http://www.public.iastate.edu/~gdancik/mlegp/} 
+\url{http://users.nsula.edu/dancikg/mlegp/} 
 }
 
 \author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }

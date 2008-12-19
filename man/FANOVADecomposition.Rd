@@ -33,7 +33,7 @@ FANOVADecomposition(gp, Interaction = TRUE, verbose = TRUE, outputs = NULL, maxp
 }
 \references{ Schonlau, M. and Welch, W. 2006. Screening the Input Variables to a Computer Model Via Analysis of Variance and Visualization, in Screening: Methods for Experimentation in Industry, Drug Discovery, and Genetics. A Dean and S. Lewis, eds. (New York: Springer).  
 
-\url{http://www.public.iastate.edu/~gdancik/mlegp/}
+\url{http://users.nsula.edu/dancikg/mlegp/}
 }
 
 

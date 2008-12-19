@@ -28,7 +28,7 @@ anyReps(X)
 
   \code{anyReps} returns \code{TRUE} if two or more rows of \code{X} are identical
 }
-\references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
+\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
 \author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \note{  
 These functions are used by \code{mlegp} to set an initial value of the nugget when a constant nugget is being estimated. The function \code{varPerReps} may also be useful for specifying the form of the nugget matrix for use with \code{mlegp}. 

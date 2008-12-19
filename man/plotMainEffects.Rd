@@ -17,10 +17,9 @@ plotMainEffects(gp, ylab = "predicted output", graphStyle = 2, verbose = FALSE, 
 \arguments{
   \item{gp}{ an object of class 'gp' or 'gp.list' }
   \item{ylab}{ optional y-axis label }
-  \item{graphStyle}{ integer indicating the format of the graph, as folllows:\tabular{ll}{\tab 0 - no legend\cr
-			\tab 1 - legend is on top right of graph\cr
-			\tab 2 - legend is to the right of the graph (default)}				
- }
+  \item{graphStyle}{ integer indicating the format of the graph, as folllows:
+		0, no legend; 1, legend on top right of graph; 2, legend to
+the right of the graph (default). }
   \item{verbose}{ set \code{verbose} to \sQuote{TRUE} to display status updates while running }
   \item{no.plot}{ set \code{no.plot} to \sQuote{TRUE} to turn plotting off and to return the main effects }
   \item{\dots}{ see \code{Additional argument} sections }
@@ -46,17 +45,20 @@ Additional arguments (described below) will vary depending on whether \code{gp} 
 }
 
 \section{Additional Arguments (General)}{
+\itemize{
 \item{\code{FANOVA}}{ if TRUE, and graphStyle is 1 or 2, FANOVA results (\% of total functional variance of each effect) is reported in the legend; this option is not implmented for functional output }
 \item{\code{lower}}{ a vector for the minimum values of all parameters of the \code{gp} design matrix, defaulting to the minimum value of each parameter in the design }
 \item{\code{upper}}{ a vector for the maximum values of all parameters of the \code{gp} design matrix, defaulting to the maximum value of each parameter in the design }
-}
+}}
 
 \section{Additional Arguments (for single Gaussian processes)}{
+\itemize{
 \item{\code{effects}}{ a vector of parameter names (or numbers) to plot main effects for, corresponding to the column of the design matrix (default is all parameters) }
 \item{\code{length.out}}{ the number of values to plot for each parameter }
-}
+}}
 
 \section{Additional Arguments (for Gaussian process lists)}{
+\itemize{
 \item{\code{effects}}{ the name (or number) of the parameter to plot main effects for; only one main effect can be plotted at a time  }
 \item{\code{gp.nums}}{ a vector of the Gaussian process numbers to plot (all Gaussian processes in list are analyzed by default) }
 \item{\code{length.out}}{ the number of values of each parameter to plot (but does not apply for main effects of functional output }
@@ -64,15 +66,12 @@ Additional arguments (described below) will vary depending on whether \code{gp} 
 \item{\code{param.values}}{ if calculating the main effect of output using principle component weights, the parameter values to look at }
 \item{\code{xlab}}{ if calculating the main effect of output using principle component weights, optional x-axis label (default is 'time')  }
 \item{\code{xValues}}{ for plotting main effects of functional output, the values to plot along the x-axis }
-}
-
-
-
+} }
 
 \references{ Schonlau, M. and Welch, W. 2006. Screening the Input Variables to a Computer Model Via Analysis of Variance and Visualization, in Screening: Methods for Experimentation in Industry, Drug Discovery, and Genetics. A Dean and S. Lewis, eds. (New York: Springer). 
 
 
-\url{http://www.public.iastate.edu/~gdancik/mlegp/}
+\url{http://users.nsula.edu/dancikg/mlegp/}
 
 }
 \author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }

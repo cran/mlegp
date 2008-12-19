@@ -14,6 +14,6 @@
 \details{
   These functions should not be called by the user
 }
-\references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
+\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
 \author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \keyword{ internal }

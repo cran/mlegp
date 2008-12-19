@@ -15,7 +15,7 @@
   prints a summary of the Gaussian process object \code{object}. Output should be self explanatory, except for possibly CV RMSE, the cross-validated root mean squared error (the average squared difference between the observations and cross-validated predictions); and CV RMaxSE, the maximum cross-validated root squared error. If the design in the Gaussian process object contains any replicates, the root mean pure error (RMPE), which is the square root of the average within replicate variance and the root max pure error (RMaxPE) are also reported.   
   
 }
-\references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
+\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
 \author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \seealso{ \code{\link{createGP}} for details of the Gaussian process object
 }

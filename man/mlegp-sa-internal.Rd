@@ -19,7 +19,7 @@
 	These functions are called by FANOVADecomposition, plotMainEffects, and plotInteractionEffect,
 	and should not be called by the user. Some of these require the library \code{adapt}.
 }
-\references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
+\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
 \author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \keyword{ internal }
 \keyword{ htest }

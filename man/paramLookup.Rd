@@ -27,7 +27,7 @@ or not the indices are valid
 if \code{m[i]} is not an element of \code{string}, \code{toParamIndexes} will display an error, whereas \code{matchIndexes} will return \code{NA}
 
 }
-\references{ \url{http://www.public.iastate.edu/~gdancik/mlegp/} }
+\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
 \author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
 \note{  
   this function does not need to be called by the user; it exists so that the user can pass in a vector of parameter numbers or parameter names to various functions when specifying a subset of the parameters of the Gaussian process design matrix
