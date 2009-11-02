@@ -102,6 +102,22 @@ void zeroPackedMatrix(double *m, int n) {
 	}
 }
 
+double sumPackedMatrix(const double *m, const int n) {
+	int i = 0, count = 0;
+	double sum = 0.0, diag = 0.0;
+	for (i = 0; i < n*(n+1)/2; i++) {
+		sum += m[i];
+	}
+	
+	// get diag
+	for (i = n; i > 0; i--) {
+		diag += m[count];
+		count+=i;
+	}
+
+	return (sum - diag)*2.0 + diag;	
+}
+
 void createIdentityMatrix(double *m, int n) {
 	int i,j;
 	for (i = 0; i < n; i++) {
@@ -224,16 +240,26 @@ void matrix_multiply(const double *A, int nrowA, int ncolA, const double *B, int
 	}
 }
 
-// multiplies all elements of unpacked nxn matrix m by c
-void unpacked_matrix_scale(double *m, const double c, const int n) {
+// multiplies all elements of packed nxn matrix m by c
+void packed_matrix_scale_const(double *m, const double c, const int n) {
 	int i;
 	for (i = 0; i < n*(n+1)/2; i++) {
 		m[i] *= c;
 	}
 }
 
-
-
+/***************************************************
+static void scale_packed_corMatrix(double *m, const double c, const double *reps, const int n)
+{
+	int i, j;
+	for (i=0; i<n; i++) {
+		for (j=0; j<=i; j++) {
+		//	printout("m = %f, c = %f, reps[i] = %f,  reps[j] = %f\n", m[i+(j*(2*n-j-1))/2], c, reps[i], reps[j]); 
+			m[i+(j*(2*n-j-1))/2] *= (c/ sqrt(reps[i]*reps[j])   );
+		}
+	}
+}
+*******************************************/
 /***********************************************************************
 cbind - implementation of cbind from R; stores the matrix {X1 X2} in A
 ***********************************************************************/

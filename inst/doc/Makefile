@@ -1,14 +1,16 @@
-TEX = mlegp.tex gp.tex gp_ex.tex SA.tex SVD.tex overview.tex
+#TEX = mlegp.tex gp.tex gp_ex.tex overview.tex 
+TEX = mlegp.tex 
 RNW = $(TEX:.tex=.Rnw)
 PDF = $(TEX:.tex=.pdf)
 PS = $(TEX:.tex=.ps)
 
-all: ${PDF} clean
+all: mlegp.pdf clean
 
-mlegp.dvi: ${TEX}
+mlegp.pdf: ${TEX}
 	latex mlegp.tex 
 	latex mlegp.tex 
 	latex mlegp.tex 
+	dvipdf mlegp.dvi
 
 ### update tex files ###
 mlegp.tex: mlegp.Rnw
@@ -30,42 +32,42 @@ overview.tex: overview.Rnw
 	R CMD Sweave overview.Rnw
 
 ### update ps files ##
-mlegp.ps: mlegp.dvi
-	dvips -Pwww -t letter mlegp.dvi -o mlegp.ps
+#mlegp.ps: mlegp.dvi
+#	dvips -Pwww -t letter mlegp.dvi -o mlegp.ps
 
-gp.ps: mlegp.dvi
-	dvips -Pwww -pp1-3 -t letter mlegp.dvi -o gp.ps
+#gp.ps: mlegp.dvi
+#	dvips -Pwww -pp1-3 -t letter mlegp.dvi -o gp.ps
 
-gp_ex.ps: mlegp.dvi
-	dvips -Pwww -pp3-6 -t letter mlegp.dvi -o gp_ex.ps
+#gp_ex.ps: mlegp.dvi
+#	dvips -Pwww -pp3-6 -t letter mlegp.dvi -o gp_ex.ps
 
-SA.ps: mlegp.dvi
-	dvips -Pwww -pp6-9 -t letter mlegp.dvi -o SA.ps
+#SA.ps: mlegp.dvi
+#	dvips -Pwww -pp6-9 -t letter mlegp.dvi -o SA.ps
 
-SVD.ps: mlegp.dvi
-	dvips -Pwww -pp9-15 -t letter mlegp.dvi -o SVD.ps
+#SVD.ps: mlegp.dvi
+#	dvips -Pwww -pp10-15 -t letter mlegp.dvi -o SVD.ps
 
-overview.ps: mlegp.dvi
-	dvips -Pwww -pp1 -t letter mlegp.dvi -o overview.ps
+#overview.ps: mlegp.dvi
+#	dvips -Pwww -pp1 -t letter mlegp.dvi -o overview.ps
 
 ### update pdf files ###
-mlegp.pdf: mlegp.ps
-	ps2pdf mlegp.ps
+#mlegp.pdf: mlegp.ps
+#	ps2pdf mlegp.ps
 
-gp.pdf: gp.ps
-	ps2pdf gp.ps
+#gp.pdf: gp.ps
+#	ps2pdf gp.ps
 
-gp_ex.pdf: gp_ex.ps
-	ps2pdf gp_ex.ps
+#gp_ex.pdf: gp_ex.ps
+#	ps2pdf gp_ex.ps
 
-SA.pdf: SA.ps
-	ps2pdf SA.ps
+#SA.pdf: SA.ps
+#	ps2pdf SA.ps
 
-SVD.pdf: SVD.ps
-	ps2pdf SVD.ps
+#SVD.pdf: SVD.ps
+#	ps2pdf SVD.ps
 
-overview.pdf: overview.ps
-	ps2pdf overview.ps
+#overview.pdf: overview.ps
+#	ps2pdf overview.ps
 
 clean:
 	rm -f *.aux *.log *.bbl *.blg *.eps ${TEX} *.ps *.dvi 

@@ -1,4 +1,4 @@
-\name{mlegp}
+\name{is.gp}
 \alias{is.gp}
 \alias{is.gp.list}
 \title{ Gaussian Process and Gaussian Process Lists }

@@ -1,11 +1,17 @@
 `mlegp` <-
-function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NULL, gp.names = NULL, 
+function(X, Z, constantMean = 1, nugget = NULL, nugget.known = 0, min.nugget = 0, param.names = NULL, gp.names = NULL, 
 	PC.UD = NULL, PC.num = NULL, PC.percent = NULL, 
 	simplex.ntries = 5, simplex.maxiter = 500, simplex.reltol = 1e-8,  
-	BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, seed = 0, verbose = 1) {
+	BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, seed = 0, verbose = 1, parallel =  FALSE) {
 
-	X = as.matrix(X)
+	X = as.matrix(X); orig.X = X
 	Z = as.matrix(Z)
+	reps = NULL; un.sum = NULL
+
+
+	if(nrow(X) == 1) {
+		stop("error: there must be at least two input values")
+	}
 
 	if (!is.null(param.names) && length(param.names) != dim(X)[2]) {
 		stop("length of param.names must match number of columns of X")
@@ -28,6 +34,9 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 	else {
 		numGPs = 1
 		Z = matrix(Z)
+	}
+	if (length(seed) != 1 && length(seed) != ncol(Z)) {
+		stop("error: seed length must equal dimensions of Z, or 1")
 	}
 
 	if (is.null(gp.names)) {
@@ -67,7 +76,17 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 		}
 	}
 
-
+	### set up means if necessary, in which case we always use nugget matrix ###
+	if (nugget.known == 1) {
+		if (!is.null(nugget) && length(nugget) > 1 && length(nugget) != nrow(X)) {
+			stop("error: for nugget.known = 1, length of nugget matrix must be nrow(X) or 1")	
+		}
+		un.sum = uniqueSummary(X,Z)
+		orig.X = X
+		X = un.sum$uniqueX
+		Z = un.sum$uniqueMeans
+		reps = un.sum$reps
+	}
 	if (!is.null(nugget) && length(nugget) == 1 && nugget <= 0) {
 		## check for ANY reps
 		if (anyReps(X)) stop("at least 2 or more inputs are identical...must use nugget!")
@@ -79,7 +98,7 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 			if (verbose > 0) cat("no reps detected - nugget will not be estimated\n")
 		}	
 		else {
-			if (verbose > 0) cat("reps detected - nugget will be estimated\n")	
+			if (verbose > 0 && nugget.known == 0)  cat("reps detected - nugget will be estimated\n")	
 		}
 	}	
 
@@ -94,34 +113,82 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 	}
 
 	estimates = rep(0,numEstimates)
-
-	if (verbose > 0) cat("\n\n")
+	if (verbose > 0) cat("\n")
 	
 	l = NULL
-	for (i in 1:numGPs) {
-	    if (verbose > 0) {
-		    cat("========== FITTING GP #")
-		    cat(i)
-		    cat("==============================\n")
-	    }
 
-	    if (is.null(nugget) || (length(nugget) == 1 && nugget != 0)) {
-		if (anyReps(X)) nugget = estimateNugget(X,Z[,i] )	
+	Zlist = list()
+	if (length(seed) == 1) seed = rep(seed, ncol(Z))
+
+
+	for (i in 1:ncol(Z)) {
+		Zlist[[i]] = list()
+		Zlist[[i]]$Z = matrix(Z[,i])
+		Zlist[[i]]$i = i
+		Zlist[[i]]$seed = seed[i]
 		
+	}	
+
+	if (!parallel) {
+		l = lapply(Zlist, mlegp2, XX=X, orig.XX = orig.X, nugget = nugget, nugget.known = nugget.known, reps = reps, un.sum = un.sum, numEstimates = numEstimates,constantMean=constantMean, simplex.ntries = simplex.ntries, simplex.maxiter = simplex.maxiter, simplex.reltol = simplex.reltol, BFGS.maxiter = BFGS.maxiter, BFGS.tol = BFGS.tol, BFGS.h = BFGS.h, min.nugget = min.nugget, verbose = verbose, param.names = param.names) 
+	}
+
+	if (parallel) {
+		cat("fitting "); cat(length(Zlist)); cat(" GPs in parallel mode...\n")
+		l = sfLapply(Zlist, mlegp2, XX=X, orig.XX = orig.X, nugget = nugget, nugget.known = nugget.known, reps = reps, un.sum = un.sum, numEstimates = numEstimates,constantMean=constantMean, simplex.ntries = simplex.ntries, simplex.maxiter = simplex.maxiter, simplex.reltol = simplex.reltol, BFGS.maxiter = BFGS.maxiter, BFGS.tol = BFGS.tol, BFGS.h = BFGS.h, min.nugget = min.nugget, verbose = verbose, param.names = param.names)
+		cat("...done\n") 
+	}
+	if (numGPs == 1) {
+		return (l[[1]])
+	}
+	return (gp.list(l, UD = PC.UD, param.names = param.names, gp.names = gp.names))
+
+}
+
+
+
+mlegp2 <- function(ZZ, XX, orig.XX, nugget, nugget.known, reps, un.sum, numEstimates,constantMean, simplex.ntries, simplex.maxiter, simplex.reltol, BFGS.maxiter, BFGS.tol, BFGS.h, min.nugget, verbose, param.names = param.names) {
+
+	    Z = ZZ$Z
+	    i = ZZ$i	
+	    seed = ZZ$seed
+
+	    if (verbose > 0) {
+		    cat("========== FITTING GP # "); cat(i);
+		    cat(" ==============================\n")
 	    }
+		
+	   if (nugget.known == 1 ) { 
+		if(is.null(nugget)) {    ## calculate the BLUE of the nugget; each sample variance scaled by (n_i - 1) / (N-k)
+			## check that reps > 1 for at least one
+			if (max(reps) < 2) {
+				stop("error: cannot estimate nugget when replicate runs are not available; set nugget to its known value or include replicate observations")
+			}
+			index = reps > 1
+			nugget = sum( un.sum$uniqueVar[index,i]*(reps[index]-1) / (sum(reps[index]) - sum(index)))
+		}
+		if (length(nugget) > 1) {   ## nugget matrix is for unique obs
+			nugget = uniqueSummary(orig.XX, matrix(nugget))$uniqueMeans	
+		}
+		nugget = nugget / reps 
+	}
+	if (is.null(nugget) || (length(nugget) == 1 && nugget != 0)) {
+		if (anyReps(XX)) nugget = estimateNugget(XX,Z )	
+		
+	}
 
 	    simplex.abstol = -99999
 
 	    success = 0
 	    estimates = rep(0,numEstimates)
- 	    returnFromC = .C("fitGPfromR", as.double(X), as.integer(nrow(X)), as.integer(ncol(X)),
-		as.double(Z[,i]), as.integer(nrow(Z)), 
+ 	    returnFromC = .C("fitGPfromR", as.double(XX), as.integer(nrow(XX)), as.integer(ncol(XX)),
+		as.double(Z), as.integer(nrow(Z)), 
 		as.integer(constantMean), 
 		as.integer(simplex.ntries), as.integer(simplex.maxiter), 
 			as.double(simplex.abstol), as.double(simplex.reltol),
 		as.integer(BFGS.maxiter), as.double(BFGS.tol), as.double(BFGS.h), 
 		as.integer(seed), as.double(nugget), as.integer(length(nugget)), as.double(min.nugget),
-		estimates = as.double(estimates), verbose = as.integer(verbose), success = as.integer(success), 
+		estimates = as.double(estimates), verbose = as.integer(verbose), nugget.known = as.integer(nugget.known), success = as.integer(success), 
 		PACKAGE="mlegp")
 
 	    if (returnFromC$success != 0) {
@@ -130,11 +197,11 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
             }	
 	    estimates = returnFromC$estimates
 
-    	    numParams = dim(X)[2]
+    	    numParams = dim(XX)[2]
 	    regSize = 1
 	    meanReg = estimates[1]
 	    if (constantMean == 0) {
-		regSize = dim(X)[2] + 1
+		regSize = dim(XX)[2] + 1
 		meanReg = estimates[1:regSize]
 	    }
 
@@ -147,7 +214,7 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 
 	    if (is.null(nugget)) nugget = 0
 
-	    if (length(nugget) > 1) {
+	    if (length(nugget) > 1 && nugget.known == 0) {
 		if (verbose > 0) {
 			cat(paste("nugget matrix will be scaled by: ", estimates[numParams+2]))
 			cat("\n")
@@ -155,31 +222,37 @@ function(X, Z, constantMean = 1, nugget = NULL, min.nugget = 0, param.names = NU
 		nugget = nugget * estimates[numParams+2]
 	    }
 	    else {
-		if (nugget > 0) {
+		if (nugget > 0 && nugget.known == 0) {
 			nugget = estimates[numParams+2]
 		}
 	    }
 	
+
+ 	    if (is.null(param.names)) param.names = paste("p",1:dim(XX)[2],sep="")
+
 	   nugget = nugget + min.nugget
-
- 	    if (is.null(param.names)) param.names = paste("p",1:dim(X)[2],sep="")
-
+	
 	    if (verbose > 0) cat("creating gp object...")
-	    fit1 = createGP(X, as.matrix(Z[,i]), beta, a, meanReg, sig2, nugget, 
+	    fit1 = createGP(XX, as.matrix(Z), beta, a, meanReg, sig2, nugget, 
 		param.names = param.names, constantMean = constantMean)
 	    if(is.null(fit1)) {
 		cat("GP #"); cat(i); cat(" cannot be created...exiting mlegp\n")
 		return (NULL)
-	    } 	
+	    } 
+		
+	   ## report nugget for single observation
+	   if (nugget.known ==1 ) {
+		fit1$nugget = fit1$nugget*reps  
+		uniqueNug = unique(fit1$nugget)
+		if(length(uniqueNug) == 1) fit1$nugget = as.numeric(uniqueNug)  
+	    }	
 	    if (verbose > 0) cat("...done\n\n")
 
-	    l[[i]] = fit1
-
-	    }
-
-	if (numGPs == 1) {
-		return (l[[1]])
-	}
-	return (gp.list(l, UD = PC.UD, param.names = param.names, gp.names = gp.names))
+	    return(fit1)
 }
+
+
+
+
+
 

@@ -42,17 +42,25 @@ fit_gp.h - fits a gp to a set of observations, using numerical methods and
 
 // parameters that do not vary; will be passed into minimization functions (f_min, etc)
 typedef struct {
-	double *X;       	// the design that produces the observations
+	double *X;       	// the design that produces the observations 
 	double *fX;      	// for the mean function will have the form (fX)'B
 	double *Y;		// the observations
-	int nY;                 // number of observations
+	int nY;                 // number of observations (should be mean observations in the case of reps)
 	int ncolsX;		// number of columns of X 
 	int ncolsfX; 		// number of columns of fX
 	double h;		// used in derivative approximation [f(x+h) - f(x+h)] / h
 	double *nuggetMatrix;   // pointer to nugget 'matrix'; NULL otherwise
 	int verbose;		// level of detail for output
-	int estimateNugget;   // 1 if we are estimating a nugget term (either constant or scalar multiplier of nug matrix)	
+	// estimateNugget = 1 if we are estimating a nugget term (either constant or scalar multiplier of nug matrix)
+	// to specify a known nugget, assign a nuggetMatrix but set estimateNugget to 0	
+	int estimateNugget;   
+	int nugget_known;
 	double min_nugget;	// minimum value of the nugget, or can be used to force a nugget
+	// if we know the nugget!
+	// # of reps per design point (treat as double to avoid silly calculation mistakes)
+	//double *reps;		
+	//double MSA;
+	//double MSE;
 } gp_params; 
 
 
@@ -115,12 +123,31 @@ double f_min(const int num_p, double *orig_v, void *params) {
 	for (i = 0; i < p->ncolsX; i++) {
 		B[i] = v[i];
 	}
-
+	
 	createCorrMatrix(p->X, B, corr, p->nY, p->ncolsX);
 
-	if (p->nuggetMatrix != NULL) addNuggetMatrixToPackedMatrix(corr, v[p->ncolsX], p->nuggetMatrix, p->nY);
-	else if (p->estimateNugget == 1) addNuggetToPackedMatrix(corr, v[p->ncolsX], p->nY);
-	addNuggetToPackedMatrix(corr, p->min_nugget, p->nY); // add the minimum nugget
+	if (p->estimateNugget == 1) {  // nugget is specified up to a constant
+		if (p->nuggetMatrix != NULL) addNuggetMatrixToPackedMatrix(corr, v[p->ncolsX], p->nuggetMatrix, p->nY);
+		else if (p->estimateNugget == 1) addNuggetToPackedMatrix(corr, v[p->ncolsX], p->nY);
+	}
+	else if (p->estimateNugget == 0 && p->nuggetMatrix != NULL) {  // nugget is KNOWN exactly
+		double sig2 = 1;
+		if (p->nugget_known == 9) {
+			printerr("calcANOVAsig2 not implemented\n");
+			exit(-1);
+			//sig2 = calcANOVASig2(p->MSA, p->MSE, corr, p->nY, p->reps[1]); // make sure corr is really correlations only
+		}
+		else if (p->nugget_known == 1) sig2 = v[p->ncolsX];
+		if (!isfinite(sig2)) {   
+			FREE_VECTOR(B);
+			FREE_VECTOR(v);
+			FREE_MATRIX(corr);
+			return DBL_MAX;
+		}
+		packed_matrix_scale_const(corr, sig2, p->nY);
+		addNuggetMatrixToPackedMatrix(corr, 1.0, p->nuggetMatrix, p->nY);
+	}
+		addNuggetToPackedMatrix(corr, p->min_nugget, p->nY); // add the minimum nugget
 
 	double *corrInv = MATRIX(p->nY, p->nY);
 	createIdentityMatrix(corrInv, p->nY);
@@ -137,7 +164,7 @@ double f_min(const int num_p, double *orig_v, void *params) {
 		FREE_MATRIX(corrInv);
 		return DBL_MAX;
 	}
-	// copyCorr contains cholesky decomp, corrInv is corrInv
+	// copyCorr contains cholesky decomp, corrInv is corrInv (or inverse of covariance matrix) 
 	
 	double *bhat = VECTOR(p->ncolsfX);	
 
@@ -151,16 +178,17 @@ double f_min(const int num_p, double *orig_v, void *params) {
 	}
 	double *mu_hat = MATRIX(p->nY, 1);
 	matrix_multiply(p->fX, p->nY, p->ncolsfX, bhat, 1, mu_hat);
-	
-	double sig2 = calcMLESig2(p->Y, mu_hat, corrInv, p->nY);
 
-	unpacked_matrix_scale(corr, sig2, p->nY);
-
+	if (p->nugget_known == 0) {	
+		double sig2 = calcMLESig2(p->Y, mu_hat, corrInv, p->nY);
+		packed_matrix_scale_const(corr, sig2, p->nY);
+	}
 	double *Y = VECTOR(p->nY);
 	copyVector(p->Y, Y, p->nY);
 
+	//printout("get ans = ");
 	double ans = - logdmvnorm(Y, mu_hat, corr, p->nY);
-
+	//printout("%f\n", ans);
 	FREE_MATRIX(corr);
 	FREE_VECTOR(B);
 	FREE_VECTOR(v);
@@ -354,8 +382,7 @@ switch(x) {
 
 
 /***************************************************************************************************************
-fitGP - the driver function that finds mles for gp parameters; we run 'numSimplexTries' simplexes to find 
-		a good initial value, then continue with bfgs method
+fitGP - the driver function that finds mles for gp parameters; we run 'numSimplexTries' simplexes to find a good initial value, then continue with bfgs method
 	const double *X - pointer to design matrix for the respone(s)
 	const int nrowsX - # of rows of X, = to number of observations in Y 
 	const int ncolsX - # of columns of X, = to number of design parameters	
@@ -373,15 +400,16 @@ fitGP - the driver function that finds mles for gp parameters; we run 'numSimple
    				Euclidean (L2) norm. 
 	double BFGS_h -   for finite difference approximation to calculate gradient during BFGS
 	int rng_seed - random # seed
-	double *nugget - pointer to initial nugget value or nugget matrix
+	double *nugget - pointer to initial nugget value or nugget matrix; this MUST be a nugget matrix if nugget_known is 1 
 	int nugget_length - 1 for constant nugget, or greater than 1 for nugget matrix, in which case
 		 should be equal to the # of observations; 0 otherwise
 	double min_nugget - minimum value of nugget (added to diagonal of var-cov matrix)
 	double *estimates - stores values of mles at end of function call; order of estimates will be:
 			    ( meanReg parameters, correlation parameters, sig2(GP), sig2(nugget) )
 	int verbose - 0 for no status reporting; 1 for some; 2 for most
-
+	int nugget_known = 1 if nugget is fixed and to find MLE of sig2; or 9 if nugget is fixed and to find MOM estimate of Sig2 (no longer implemented)
 	returns 0 if success; -1 otherwise
+
 **************************************************************************************************************/
 int fitGP(const double *X, const int nrowsX, const int ncolsX, 
 	   const double *Y, int nrowsY, 
@@ -390,7 +418,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	   int BFGS_max_iter, double BFGS_tol, double BFGS_h,  
            int rng_seed, 
 	   double *nugget, int nugget_length, double min_nugget, 
-	   double *estimates, int verbose) {
+	   double *estimates, int verbose, int nugget_known/*, double *reps, double MSA, double MSE*/) {
 
 	init_gen_rand(rng_seed);
 	simplex_abstol = -DBL_MAX;
@@ -430,36 +458,59 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	gp.ncolsX = ncolsX;  // number of correlation parameters 
 	gp.h = BFGS_h;       // for finite difference approximation
 	gp.nuggetMatrix = NULL;    // pointer to nugget array for non-constant nugget 
-	if (nugget_length > 1) gp.nuggetMatrix = nugget;
+	if (nugget_length > 1) {
+		gp.nuggetMatrix = nugget;
+		//return -1;
+	}
 	gp.verbose = verbose;
 	gp.estimateNugget = 1;
 	if (nugget_length < 1) gp.estimateNugget = 0;  // we are NOT estimating nugget
+	if (nugget_known == 1 | nugget_known == 9) gp.estimateNugget = 0;  // we are NOT estimating nugget
+	gp.nugget_known = nugget_known;
 	gp.min_nugget = min_nugget;
+
+	//gp.reps = reps;
+	//gp.MSA = MSA;
+	//gp.MSE = MSE;
+
+	//printout("nugget: ");
+	//printVector("%2.2f ", gp.nuggetMatrix, gp.nY);
+	//printout("reps: ");
+	//printVector("%2.1d ", (double*) gp.reps, gp.nY);
+	//for (int i = 0; i < gp.nY; i++)
+	//	printout("%d ", gp.reps[i]);
+	//printout("\n");	
+	//exit(-1);
 
 	// the vector of parameters to maximize; correlation parameters + nugget 
 	double *v;
 	int v_length = ncolsX;       // for correlation parameter estimates
 
-	if (gp.estimateNugget == 1) v_length++;  
+	if (gp.estimateNugget == 1 | gp.nugget_known == 1) v_length++; // either for nugget or sig2   
 
 	v = VECTOR(v_length);  
 
-	// choose initial values 
-	double sig2 =  vectorVariance(Y, nrowsY);   
 	double initial_scaled_nugget = 0;       // we will use the same initial nugget for each simplex
-	if (nugget_length == 1 && nugget[0] > 0) {   // we are adding a constant nugget
-		double nug;
-		if (nugget_length == 1) nug =  *nugget; 
-		else nug = 1.0;
-		nug = nug / sig2;	// scale the nugget
-		v[ncolsX] = nug;         
-		initial_scaled_nugget = v[ncolsX]; 
+	if (gp.estimateNugget == 1) {
+		// choose initial values 
+		double sig2 =  vectorVariance(Y, nrowsY);   
+		initial_scaled_nugget = 0;       // we will use the same initial nugget for each simplex
+
+		if (nugget_length == 1 && nugget[0] > 0) {   // we are adding a constant nugget
+			double nug;
+			if (nugget_length == 1) nug =  *nugget; 
+			else nug = 1.0;
+			nug = nug / sig2;	// scale the nugget
+			v[ncolsX] = nug;         
+			initial_scaled_nugget = v[ncolsX];
+		}
+		else if (nugget_length > 1) {
+			v[ncolsX] = 1.0 / sig2;    // scaled nugget is sig2e / sig2GP
+			initial_scaled_nugget = v[ncolsX];
+		}	
+		printout("intial_scaled nugget is %f\n", v[ncolsX]);
 	}
-	else if (nugget_length > 1) {
-		v[ncolsX] = 1.0 / sig2;    // scaled nugget is sig2e / sig2GP
-		initial_scaled_nugget = v[ncolsX];
-	}	
-		
+
 	double m1 = 0, m2;
 	// correlation btwn 2 closest points is btwn m1 and m2, assuming a constant beta 
 	getUnivariateCorRange(X, nrowsX, ncolsX, &m1, &m2);   
@@ -469,6 +520,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	double best_fval = DBL_MAX;
 	int best_try = 0;
 	double *best_v = VECTOR(v_length);
+	double *best_v_from_simplex = VECTOR(v_length);
 	double *v_save = VECTOR(v_length);
 	int i;
 
@@ -476,21 +528,39 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	const double bet   = 0.5; // default contraction factor for nelder-mead
 	const double gamm  = 2.0; // default expansion factor for nelder-mead
 	int maxit = maxSimplexIterations;
-	
+
+if (1) {   /// MAXIMIZATION PROCEDURE	
 	for (simplex_try = 0; simplex_try < numSimplexTries; simplex_try++) { 
 	
-		if (verbose > 0 && maxit > 0) printout("running simplex # %d...\n", simplex_try+1);
-		
+		if (verbose > 0 && maxit > 0) {
+			printout("running simplex # %d...\n", simplex_try+1);
+		}
+
+		//printout("select initial Beta between %f, %f\n", m1,m2);
 		for (i = 0; i < ncolsX; i++) {
 			v[i] = m1 + (m2 - m1) * genrand_res53(); 
 		}
 	
-		if (v_length > ncolsX) {     // we are estimating a nugget term
-			v[ncolsX] = initial_scaled_nugget;   
+		if (v_length > ncolsX) {     // we are estimating a nugget term or sig2
+
+			if(gp.nugget_known == 0) v[ncolsX] = initial_scaled_nugget;   
+			if(gp.nugget_known == 1) { // initial sig2
+				v[ncolsX] = vectorVariance(Y, nrowsY);   
+			}
 		}
+		
+	//	printout("The %d initial params are\n", v_length);
+	//	printVector("%2.3f ", v, v_length);
 
 		// put all initial param values on the log scale
 		vector_log(v, v_length);
+
+		//printout("On log scale:\n");
+		//printVector("%2.3f", v, v_length);
+	
+		//printout("evaluate...\n");
+		double ans = -f_min(v_length, v, &gp);
+		//printout("...done, -loglike = %f\n", ans);
 
 		int fail = 0;
 		
@@ -500,10 +570,12 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 		int fncount;
 
 	        if (maxit > 0) {
+			//printout("call nelder_mead_min...\n");
 		  nelder_mead_min(v_length, v, v_save, &fval,
 		     f_min, &fail, simplex_abstol, simplex_reltol, &gp, alpha, bet, 
 		     gamm, trace, &fncount, maxit);
-
+			printout("...done\n");
+			
 		  if (verbose > 0) {
 		    	if (fail != 1) 
 				printout("...simplex #%d complete, loglike = %f (convergence)\n", simplex_try+1, -fval);
@@ -518,10 +590,8 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 			vectorCopy(v_save, best_v, v_length);
 		}
 		if (maxit == 0) break;       // initial values must be in best_fval		
-
 	}
 
-	double *best_v_from_simplex = VECTOR(v_length);
 	vectorCopy(best_v, best_v_from_simplex, v_length);
 	if (verbose > 0 && maxit > 0 ) {
 		printout("\nusing L-BFGS method from simplex #%d...\n", best_try);
@@ -556,6 +626,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 
 	// put best estimates on actual scale
 	vector_exp_check(best_v, v_length);
+}/// end maximization
 
 	// get mle's for beta corr parameters	
 	double *B = VECTOR(ncolsX);
@@ -564,25 +635,44 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 		B[i] = best_v[i];
 	}	
 
+//	printout("now B = ");
+//	printVector("%f", B, ncolsX);
 	double *corr = PACKED_MATRIX(nrowsX);	
 	createCorrMatrix(X, B, corr, nrowsX, ncolsX); 
 
-/***
-	if (nugget_length == 1 && nugget[0] > 0) {     // constant nugget
-		//printout("add constant nugget");
-		addNuggetToPackedMatrix(corr, best_v[ncolsX], nrowsX);
+	double sig2 = -1.0;
+	if (gp.estimateNugget == 1) {
+		printout("addNuggets...\n");
+   	  	if (gp.nuggetMatrix != NULL) addNuggetMatrixToPackedMatrix(corr, best_v[gp.ncolsX], gp.nuggetMatrix, gp.nY);
+          	else if (gp.estimateNugget == 1) addNuggetToPackedMatrix(corr, best_v[gp.ncolsX], gp.nY);
 	}
-	else if (nugget_length > 1) {   // nugget matrix
-		//printout("add nugget matrix");
-		addNuggetMatrixToPackedMatrix(corr, best_v[ncolsX], gp.nuggetMatrix, nrowsX);
-	}
-	addNuggetToPackedMatrix(corr, gp.min_nugget, nrowsX);   // add minimum nugget
-***/
+	else if (gp.estimateNugget == 0 && gp.nuggetMatrix != NULL) {  // nugget is KNOWN
+		sig2 = -1.0;
+		if (gp.nugget_known == 9) {
+			printerr("calcANOVASig2 not implemented\n");
+			exit(-1);
+			//sig2 = calcANOVASig2(gp.MSA, gp.MSE, corr, gp.nY, gp.reps[1]); // make sure corr is really correlations only
+		}
+		else if (gp.nugget_known == 1) {
+			sig2 = best_v[gp.ncolsX];
+		}
 
-   	if (gp.nuggetMatrix != NULL) addNuggetMatrixToPackedMatrix(corr, best_v[gp.ncolsX], gp.nuggetMatrix, gp.nY);
-        else if (gp.estimateNugget == 1) addNuggetToPackedMatrix(corr, best_v[gp.ncolsX], gp.nY);
+		if (!isfinite(sig2)) {   
+			printerr("ERROR: final sig2 is not finite!\n");
+			FREE_VECTOR(B);
+			FREE_VECTOR(v);
+			FREE_VECTOR(best_v);
+			FREE_VECTOR(best_v_from_simplex);
+			FREE_VECTOR(v_save);
+			FREE_MATRIX(fX);
+			FREE_MATRIX(corr);
+			return -1;
+		}
+
+		packed_matrix_scale_const(corr, sig2, gp.nY);
+		addNuggetMatrixToPackedMatrix(corr, 1.0, gp.nuggetMatrix, gp.nY);
+	}
         addNuggetToPackedMatrix(corr, gp.min_nugget, gp.nY); // add the minimum nugget
-
 
 	double *corrInv = MATRIX(nrowsX, nrowsX);
 	createIdentityMatrix(corrInv, nrowsX);
@@ -625,8 +715,9 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	double *mu_hat = MATRIX(nrowsX, 1);
 	matrix_multiply(fX, nrowsX, ncolsfX, bhat, 1, mu_hat);
 
-	sig2 = calcMLESig2(Y, mu_hat, corrInv, nrowsX);	
-
+	if (gp.nugget_known == 0) {
+		sig2 = calcMLESig2(Y, mu_hat, corrInv, nrowsX);	
+	}
 	// create solution vector
 	int index = 0;
 	for (i = 0; i < ncolsfX; i++) {
@@ -645,9 +736,6 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 		index++;
 	}
 
-	//printout("final estimates:\n");
-	//printVector("%6.4f ", estimates, index);
-
 	FREE_VECTOR(B);
 	FREE_VECTOR(v);
 	FREE_VECTOR(best_v);
@@ -664,7 +752,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 }
 
 void fitGPTest(double *in_X, double *in_Y) {
-	printout("fitGPTest\n");
+	printout("fitGPTest, now exit..\n");
 }
 
 
@@ -679,7 +767,7 @@ void fitGPfromR(double *X, int *nrowsX, int *ncolsX,
 	   int *BFGS_max_iter, double *BFGS_tol, double *BFGS_h,  
            int *rng_seed, 
 	   double *nugget, int *nugget_length, double *min_nugget, 
-	   double *estimates, int *verbose, int *ret) {
+	   double *estimates, int *verbose, int *nugget_known, /*double *reps, double *MSA, double *MSE,*/ int *ret) {
 
 	   double *X_mat = MATRIX(*nrowsX, *ncolsX);
 	   createMatrixByCol(X, *nrowsX, *ncolsX, X_mat);
@@ -688,7 +776,7 @@ void fitGPfromR(double *X, int *nrowsX, int *ncolsX,
 		 *numSimplexTries, *maxSimplexIterations, *simplex_abstol, *simplex_reltol,
 		 *BFGS_max_iter, *BFGS_tol, *BFGS_h,
 		 *rng_seed,
-		 nugget, *nugget_length, *min_nugget, estimates, *verbose);
+		 nugget, *nugget_length, *min_nugget, estimates, *verbose, *nugget_known/*, reps, *MSA, *MSE*/);
 
 	   FREE_MATRIX(X_mat); 
 }

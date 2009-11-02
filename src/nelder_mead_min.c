@@ -87,9 +87,11 @@ void nelder_mead_min(int n, double *Bvec, double *X, double *Fmin,
     double VH, VL, VR;
 
     if (maxit <= 0) {
+    	printout("get Fmin..\n");
 	*Fmin = fminfn(n, Bvec, ex);
 	*fncount = 0;
 	*fail = 0;
+	printout("\n done, fail = %d\n", fail);
 	return;
     }
     if (trace)
@@ -100,7 +102,7 @@ void nelder_mead_min(int n, double *Bvec, double *X, double *Fmin,
     *fail = nmFALSE;
     f = fminfn(n, Bvec, ex);
     if (!isfinite(f)) {
-     printout("function cannot be evaluated at initial parameters\n");
+     printout("oops - function cannot be evaluated at initial parameters\n");
       *fail = nmTRUE;
     } else {
 	if (trace)printout("function value for initial parameters = %f\n", f);

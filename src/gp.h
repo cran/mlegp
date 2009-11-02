@@ -121,6 +121,19 @@ double calcMLESig2 (const double *Y, const double *mu, const double *Vinv, int n
 	return sig2;
 }
 
+// make sure corr is really correlations 
+// assume that nreps / design point is the SAME, and nY is # of design points
+// nY MUST be equal to # of design points for calculation to be correct
+// returns an unbiased estimate of Sigma2(GP)
+// requires that MSE < MSA
+/***********************
+double calcANOVASig2 (double MSA, double MSE, const double *corr, const double nY, const double nreps) { 
+	double num = (MSA - MSE) * (nY - 1.00);
+	double den = nreps*(nY + 1.0 - 2.0 / nY * sumPackedMatrix(corr, nY)); 
+	return num / den;
+}
+****************************/
+
 /******************************************************************************************
 addNugget - adds a constant nugget term to the diagonal of the packed matrix m that is nxn 
 ******************************************************************************************/
@@ -135,7 +148,7 @@ void addNuggetToPackedMatrix(double *m, double nugget, int n) {
 
 
 /*********************************************************************************************
-addNuggetMatrix - adds c * diag(nugget matrix) to the packed matrix m that is nxn
+addNuggetMatrixToPackedMatrix - adds c * diag(nugget matrix) to the packed matrix m that is nxn
 **********************************************************************************************/
 void addNuggetMatrixToPackedMatrix(double *m, double c, const double *nugget_matrix, int n) {
 	int count = 0;

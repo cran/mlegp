@@ -35,7 +35,7 @@ createGP(X, Z, beta, a, meanReg, sig2, nugget, param.names = 1:dim(X)[2], consta
   \item{sig2}{unconditional variance of predicted expected output}
   \item{params}{vector of parameter names, corresponding to columns of \code{X}}
   \item{invVarMatrix}{inverse var-cov matrix}
-  \item{nugget}{constant nugget or vector corresponding to the diagonal nugget matrix}
+  \item{nugget}{constant nugget or vector corresponding to the diagonal nugget matrix for a single observation generated from each element in \code{X} }
   \item{loglike}{the log likelihood of the observations}
   \item{cv}{results from cross-validation, where
 	\code{cv[,1]} are the cross-validated predictions

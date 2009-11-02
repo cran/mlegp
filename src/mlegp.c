@@ -8,13 +8,24 @@ int main() {
 
 int i;
 int n = 5;
+double sum;
 double *C = PACKED_MATRIX(n);
-
 for (i = 0; i < n*(n+1)/2; i++) {
 	C[i] = i;
 }
 
 printPackedMatrix("%6.2f ", C, n);
+
+double *reps = VECTOR(n);
+for (i = 0; i < n; i++) reps[i] = 1;
+
+//scale_packed_corMatrix(C, 2.0, reps,n);
+printout("\n\n");
+printVector("%6.2f", reps, n);
+printPackedMatrix("%6.2f ", C, n);
+
+
+return 1;
 addNuggetToPackedMatrix(C,10, n);
 printf("\n");
 printPackedMatrix("%6.2f ", C, n);
@@ -49,14 +60,19 @@ int length_estimates = numParams + 2; // add meanReg and sig2
 double *estimates = VECTOR(length_estimates);  
 int verbose = 2;
 
+int nugget_known = 1;
+//int reps = 3;
+double MSA = 2.5;
+double MSE = 0.5;
+/***
 fitGP(X, nrowsX, ncolsX, Y, nrowsY,  
 	constantMean, 
 	numSimplexTries, 
 	maxSimplexIterations, 
 	simplex_abstol, simplex_reltol,  
 	BFGS_max_iter, BFGS_tol, BFGS_h, rng_seed,
-	nugget, nugget_length,  min_nugget, estimates, verbose);
-
+	nugget, nugget_length,  min_nugget, estimates, verbose, nugget_known, reps, MSA, MSE);
+***/
 FREE_MATRIX(C);
 FREE_MATRIX(X);
 FREE_VECTOR(estimates);
