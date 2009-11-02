@@ -27,7 +27,7 @@ gp.list(..., param.names = NULL, UD = NULL, gp.names = NULL)
   \item{names}{the names of the Gaussian processes}
 }
 \references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
-\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
+\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
 \note{ 
 currently, we require that all Gaussian processes have the same dimension (number of columns in the design matrix) and the same number of observations
 

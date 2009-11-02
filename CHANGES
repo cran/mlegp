@@ -1,3 +1,6 @@
+3.1.1 (5/5/2009)
+Updated contact info
+
 3.1.0 (7/27/2009)
 User can now specify nugget matrix exactly; when replicate runs are available, mlegp can fit a GP to sample means and use a plug-in estimate for the nugget, unless a nugget matrix is specified. 
 

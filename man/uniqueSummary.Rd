@@ -23,7 +23,7 @@ uniqueSummary(X,Y)
 	\item{uniqueVar}{sample variances corresponding to each unique input}
 }
 \references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
-\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
+\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
 \examples{
 x = c(1,1,2,2,3)
 y = x + rnorm(length(x))

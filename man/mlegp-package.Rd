@@ -18,14 +18,14 @@ License: \tab Gnu General Public License (Version 3)\cr
 
 This package obtains maximum likelihood estimates of Gaussian processes (GPs) for univariate and multi-dimensional outputs, for Gaussian processes with product exponential correlation structure; a constant or linear regression mean function; no nugget term, constant nugget term, or a nugget matrix that can be specified up to a multiplicative constant. The latter provides some flexibility for using GPs to model heteroscedastic responses.
 
-The package implements sensitivity analysis including Functional Analysis of Variance (FANOVA) decomposition, plotting functions to obtain diagnostic plots, main effects, and two-way factor interactions.
-
 Multi-dimensional output can be modelled by fitting independent GPs to each output, or to the most important principle component weights following singular value decomposition of the output. Plotting of main effects for functional output is also implemented.
+
+Contact the maintainer for a package version that implements sensitivity analysis including Functional Analysis of Variance (FANOVA) decomposition, plotting functions to obtain diagnostic plots, main effects, and two-way factor interactions.
 
 For a complete list of functions, use 'library(help="mlegp")'.
 
 }
-\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
+\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
 \references{
 
 Santner, T.J. Williams, B.J., Notz, W., 2003. The Design and Analysis of Computer Experiments (New York: Springer).

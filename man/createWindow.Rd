@@ -20,7 +20,7 @@ This function is called by \code{mlegp} plotting functions that construct separa
 
 }
 \references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
-\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
+\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
 \seealso{ This function may be used by \code{\link{plot.gp}}, among others }
 \keyword{ internal }
 \keyword{ device }

@@ -16,7 +16,7 @@
   
 }
 \references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
-\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
+\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
 \seealso{ \code{\link{createGP}} for details of the Gaussian process object
 }
 \examples{

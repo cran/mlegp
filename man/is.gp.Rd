@@ -19,7 +19,7 @@ is.gp.list(x)
   \code{is.gp.list} returns \code{TRUE} or \code{FALSE}, depending on whether its argument inherits the \code{gp.list} class or not
 }
 \references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
-\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
+\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.comu } }
 \examples{
 ## fit a single Gaussian process ##
 x = -5:5; y1 = sin(x) + rnorm(length(x),sd=.1)

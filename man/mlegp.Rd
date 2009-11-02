@@ -62,7 +62,7 @@ Heitmann, K., Higdon, D., Nakhleh, C., Habib, S., 2006. Cosmic Calibration. The 
 \url{http://users.nsula.edu/dancikg/mlegp/} 
 
 }
-\author{ Garrett M. Dancik \email{ dancikg@nsula.edu } }
+\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
 \note{ The random number seed is 0 by default, but should be randomly set by the user
 
 In some situations, especially for noiseless data, it may be desirable to force a nugget term in order to make the variance-covariance matrix of the Gaussian process more stable; this can be done by setting the argument \code{min.nugget}.
