@@ -1,3 +1,6 @@
+3.1.2 (4/4/2011)
+Remove vignette makefile for compatibility with new version of Sweave
+
 3.1.1 (5/5/2009)
 Updated contact info
 

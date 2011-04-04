@@ -30,7 +30,7 @@ Where relevant, open circles correspond to Gaussian process predictions, black l
 		\tab 3 for parameter vs. standardized residual for all parameters,\cr
 		\tab 4 for normal quantile plot and histogram of standardized residuals } 
 }
-\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
+%\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
 \author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
 \seealso{ \code{\link{CV}} for cross-validation, \code{\link{plot.gp.list}} for plotting \code{gp.list} objects }
 \examples{

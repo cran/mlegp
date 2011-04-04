@@ -19,7 +19,7 @@
  
   if \code{nums} is not \code{NULL}, displays a summary of the Gaussian processes specified by \code{nums} by calling \code{summary.gp} for each Gaussian process
 }
-\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
+%\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
 \author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
 \seealso{ \code{\link{summary.gp}} }
 \examples{
