@@ -337,7 +337,7 @@ static void printMatrix(const char *fmt, const double *a, int nrow, int ncol, ch
 		for (j=0; j<ncol; j++)
 		//	printout(fmt, a[i+n*j]);
 			printout(fmt, a[i*ncol+j]);
-		putchar('\n');
+		//putchar('\n');
 	}
 }
 /*****************************************************************************************
@@ -349,7 +349,7 @@ static void printPackedMatrix(const char *fmt, const double *a, int n)
 	for (i=0; i<n; i++) {
 		for (j=0; j<=i; j++)
 			printout(fmt, a[i+(j*(2*n-j-1))/2]);
-		putchar('\n');
+		//putchar('\n');
 	}
 }
 
@@ -362,7 +362,7 @@ static void printVector(const char *fmt, const double *b, int m)
 	int i;
 	for (i=0; i<m; i++)
 		printout(fmt, b[i]);
-	putchar('\n');
+	//putchar('\n');
 }
 
 

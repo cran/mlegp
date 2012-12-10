@@ -1,3 +1,6 @@
+3.1.3 (12/10/2012)
+.First.lib no longer supported for loading compiled code; use .onLoad instead
+
 3.1.2 (4/4/2011)
 Remove vignette makefile for compatibility with new version of Sweave
 

@@ -410,7 +410,7 @@ int get_min_array_size64(void) {
 uint32_t gen_rand32(void) {
     uint32_t r;
 
-    assert(initialized);
+    //assert(initialized);
     if (idx >= N32) {
 	gen_rand_all();
 	idx = 0;
@@ -433,8 +433,8 @@ uint64_t gen_rand64(void) {
     uint64_t r;
 #endif
 
-    assert(initialized);
-    assert(idx % 2 == 0);
+    //assert(initialized);
+    //assert(idx % 2 == 0);
 
     if (idx >= N32) {
 	gen_rand_all();
@@ -479,10 +479,10 @@ uint64_t gen_rand64(void) {
  * returns the pointer to the aligned memory block.
  */
 void fill_array32(uint32_t *array, int size) {
-    assert(initialized);
-    assert(idx == N32);
-    assert(size % 4 == 0);
-    assert(size >= N32);
+    //assert(initialized);
+    //assert(idx == N32);
+    //assert(size % 4 == 0);
+    //assert(size >= N32);
 
     gen_rand_array((w128_t *)array, size / 4);
     idx = N32;
@@ -515,10 +515,10 @@ void fill_array32(uint32_t *array, int size) {
  * returns the pointer to the aligned memory block.
  */
 void fill_array64(uint64_t *array, int size) {
-    assert(initialized);
-    assert(idx == N32);
-    assert(size % 2 == 0);
-    assert(size >= N64);
+    //assert(initialized);
+    //assert(idx == N32);
+    //assert(size % 2 == 0);
+    //assert(size >= N64);
 
     gen_rand_array((w128_t *)array, size / 2);
     idx = N32;

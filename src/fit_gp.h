@@ -134,7 +134,7 @@ double f_min(const int num_p, double *orig_v, void *params) {
 		double sig2 = 1;
 		if (p->nugget_known == 9) {
 			printerr("calcANOVAsig2 not implemented\n");
-			exit(-1);
+			return(-1); //exit(-1);
 			//sig2 = calcANOVASig2(p->MSA, p->MSE, corr, p->nY, p->reps[1]); // make sure corr is really correlations only
 		}
 		else if (p->nugget_known == 1) sig2 = v[p->ncolsX];
@@ -650,7 +650,7 @@ if (1) {   /// MAXIMIZATION PROCEDURE
 		sig2 = -1.0;
 		if (gp.nugget_known == 9) {
 			printerr("calcANOVASig2 not implemented\n");
-			exit(-1);
+			return(-1); //exit(-1);
 			//sig2 = calcANOVASig2(gp.MSA, gp.MSE, corr, gp.nY, gp.reps[1]); // make sure corr is really correlations only
 		}
 		else if (gp.nugget_known == 1) {

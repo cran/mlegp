@@ -21,8 +21,8 @@ void printerr(const char *str, ...) {
 	REvprintf(str, argp);
 	R_FlushConsole();
 	#else
-	vfprintf(stderr, str, argp);
-	fflush(stderr);
+	//vfprintf(stderr, str, argp);
+	//fflush(stderr);
 	#endif
  	va_end(argp);
 }

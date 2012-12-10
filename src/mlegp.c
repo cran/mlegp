@@ -1,3 +1,10 @@
+/********************************************************
+* 12/20/12: all output must be written to R; therefore  *
+* I commented all putchars and some of print.h, also 	*
+* I changed all exits to returns and commented out all 	*
+* asserts						*
+********************************************************/
+
 #include <stdio.h>
 #include "matrix_vector.h"
 #include "gp.h"
