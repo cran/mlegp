@@ -22,8 +22,8 @@ uniqueSummary(X,Y)
 	\item{uniqueMeans}{sample means corresponding to each unique input}
 	\item{uniqueVar}{sample variances corresponding to each unique input}
 }
-%\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
-\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
+\references{ \url{http://www1.easternct.edu/dancikg/} }
+\author{ Garrett M. Dancik \email{ dancikg@easternct.edu } }
 \examples{
 x = c(1,1,2,2,3)
 y = x + rnorm(length(x))

@@ -5,7 +5,8 @@
 	creates a Gaussian process \code{gp} object
 }
 \usage{
-createGP(X, Z, beta, a, meanReg, sig2, nugget, param.names = 1:dim(X)[2], constantMean = 1)
+createGP(X, Z, beta, a, meanReg, sig2, nugget, 
+   param.names = 1:dim(X)[2], constantMean = 1)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -42,8 +43,8 @@ createGP(X, Z, beta, a, meanReg, sig2, nugget, param.names = 1:dim(X)[2], consta
   	\code{cv[,2]} are the variances of the cross-validated predictions}
 }
 
-%\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
-\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
+\references{ \url{http://www1.easternct.edu/dancikg/} }
+\author{ Garrett M. Dancik \email{ dancikg@easternct.edu } }
 \note{ this function is called by \code{mlegp} and should not be called by the user }
 \seealso{ \code{\link{mlegp}} }
 \keyword{ internal }

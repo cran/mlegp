@@ -25,7 +25,7 @@ Contact the maintainer for a package version that implements sensitivity analysi
 For a complete list of functions, use 'library(help="mlegp")'.
 
 }
-\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
+\author{ Garrett M. Dancik \email{ dancikg@easternct.edu } }
 \references{
 
 Santner, T.J. Williams, B.J., Notz, W., 2003. The Design and Analysis of Computer Experiments (New York: Springer).
@@ -34,7 +34,7 @@ Schonlau, M. and Welch, W. 2006. Screening the Input Variables to a Computer Mod
  
 Heitmann, K., Higdon, D., Nakhleh, C., Habib, S., 2006. Cosmic Calibration. The Astrophysical Journal, 646, 2, L1-L4.
 
-%\url{http://users.nsula.edu/dancikg/mlegp/} 
+\url{http://www1.easternct.edu/dancikg/} 
 
 }
 \keyword{ package }

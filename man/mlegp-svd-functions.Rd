@@ -44,10 +44,10 @@ numSingularValues(Y, cutoff = 99)
 }
 \references{ Heitmann, K., Higdon, D., Nakhleh, C., Habib, S., 2006. Cosmic Calibration. The Astrophysical Journal, 646, 2, L1-L4.
 
-%\url{http://users.nsula.edu/dancikg/mlegp/} 
+\url{http://www1.easternct.edu/dancikg/} 
 }
 
-\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
+\author{ Garrett M. Dancik \email{ dancikg@easternct.edu } }
 
 \note{ these functions are utilized by \code{mlegp} to fit Gaussian processes to principle component weights}
 \seealso{ \code{\link{mlegp}}} 

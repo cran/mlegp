@@ -6,10 +6,12 @@
   Finds maximum likelihood estimates of Gaussian process parameters for a vector (or matrix) of one (or more) responses. For multiple responses, the user chooses between fitting independent Gaussian processes to the separate responses or fitting independent Gaussian processes to principle component weights obtained through singular value decomposition of the output. The latter is useful for functional output or data rich situations. 
 }
 \usage{
-mlegp(X, Z, constantMean = 1, nugget = NULL, nugget.known = 0, min.nugget = 0, param.names = NULL, gp.names = NULL, 
+mlegp(X, Z, constantMean = 1, nugget = NULL, nugget.known = 0, 
+        min.nugget = 0, param.names = NULL, gp.names = NULL, 
 	PC.UD = NULL, PC.num = NULL, PC.percent = NULL, 
 	simplex.ntries = 5, simplex.maxiter = 500, simplex.reltol = 1e-8,  
-	BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, seed = 0, verbose = 1, parallel = FALSE)
+	BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, seed = 0, 
+        verbose = 1, parallel = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -59,10 +61,10 @@ Santner, T.J. Williams, B.J., Notz, W., 2003. The Design and Analysis of Compute
 
 Heitmann, K., Higdon, D., Nakhleh, C., Habib, S., 2006. Cosmic Calibration. The Astrophysical Journal, 646, 2, L1-L4.
 
-%\url{http://users.nsula.edu/dancikg/mlegp/} 
+\url{http://www1.easternct.edu/dancikg/} 
 
 }
-\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
+\author{ Garrett M. Dancik \email{ dancikg@easternct.edu } }
 \note{ The random number seed is 0 by default, but should be randomly set by the user
 
 In some situations, especially for noiseless data, it may be desirable to force a nugget term in order to make the variance-covariance matrix of the Gaussian process more stable; this can be done by setting the argument \code{min.nugget}.

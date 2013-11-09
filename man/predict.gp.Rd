@@ -34,8 +34,8 @@
   \item{fit}{vector as above}
   \item{se.fit}{standard error of the predictions}
 }
-%\references{ \url{http://users.nsula.edu/dancikg/mlegp/} }
-\author{ Garrett M. Dancik \email{ garrett.dancik@gmail.com } }
+\references{ \url{http://www1.easternct.edu/dancikg/} }
+\author{ Garrett M. Dancik \email{ dancikg@easternct.edu } }
 \note{ for predictions with \code{gp.list} objects, call \code{predict.gp} separately for each gp in the list
 }
 \seealso{For cross-validated predictions, see \code{\link{CV}}  }
@@ -44,7 +44,9 @@
 x = -5:5; y = sin(x) + rnorm(length(x), sd = 0.001)
 fit = mlegp(x,y)
 predict(fit, matrix(c(2.4, 3.2)))
-round(predict(fit) - fit$Z, 6)   ## predictions at design points match the observations (because there is no nugget)
+## predictions at design points match the observations 
+## (because there is no nugget)
+round(predict(fit) - fit$Z, 6)   
 
 # this is not necessarily true if there is a nugget
 fit = mlegp(x,y, min.nugget = 0.01)
