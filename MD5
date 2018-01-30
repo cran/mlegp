@@ -1,5 +1,5 @@
 811ee4178bc10f5bef6aab93ca9c283c *CHANGES
-1a1eeb8e45806ac0c63e4e946978d486 *DESCRIPTION
+40a56297f9e246381d14840a2242b96d *DESCRIPTION
 1e6b2a1567eeca769467eaed62974e57 *NAMESPACE
 9f1ac7cc2f5ceef0a7a5caadd477fdff *R/CV.R
 156ca9bca006bf8e452444c917a59f85 *R/anyReps.R
@@ -41,10 +41,8 @@ d52fef5ded638ed60e26709c64a49f12 *R/singularValueImportance.R
 d1f3d8e9d5c2ac80c7da75e5058682b4 *R/toParamIndexes.R
 cef3a742b77a3c4c3c16854c696d29e7 *R/uniqueSummary.R
 bd2d3cedf147450e58191c7a8fb86269 *R/varPerReps.R
-5017c29fe3e14fc2a23de7fe98412723 *build/vignette.rds
-b4d45d1e19ce5662e6825ccd15fc371a *inst/doc/mlegp.R
-c048cb3a4aa1037239dfaa09160d5fb7 *inst/doc/mlegp.Rnw
-0189861b61ad87c9ec629f838c46421b *inst/doc/mlegp.pdf
+e6abeb0d74bfc4666cf63ff3a71b2562 *inst/CITATION
+d525a563b8d9aa0e5ddc30761fb7aad0 *inst/doc/mlegp.pdf
 c97d4545a22710f14fd8b0a5ca8bd5af *man/CV.Rd
 1c7a873cb73e166672171cf1e3a7e5ec *man/createGP.Rd
 f5ad58944a06bb94450caee91d977702 *man/createWindow.Rd
