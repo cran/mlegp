@@ -1,8 +1,8 @@
 Package: mlegp
 Type: Package
 Title: Maximum Likelihood Estimates of Gaussian Processes
-Version: 3.1.4
-Date: 2013-11-09
+Version: 3.1.5
+Date: 2018-01-29
 Author: Garrett M. Dancik
 Maintainer: Garrett M. Dancik <dancikg@easternct.edu>
 Suggests: snowfall
@@ -13,6 +13,6 @@ Description: Maximum likelihood Gaussian process modeling for
 License: GPL (>= 2)
 URL:
 Repository: CRAN
-Date/Publication: 2013-12-10 11:10:47
-Packaged: 2013-12-08 15:48:04 UTC; dancikg
+Date/Publication: 2018-01-30 14:20:17 UTC
+Packaged: 2018-01-30 12:54:09 UTC; dancikg
 NeedsCompilation: yes

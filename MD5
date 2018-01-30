@@ -1,6 +1,6 @@
 811ee4178bc10f5bef6aab93ca9c283c *CHANGES
-8cda2b82ea3e940c710ed7af19036315 *DESCRIPTION
-1b698c8f8f78c9135f78cff042de9512 *NAMESPACE
+1a1eeb8e45806ac0c63e4e946978d486 *DESCRIPTION
+1e6b2a1567eeca769467eaed62974e57 *NAMESPACE
 9f1ac7cc2f5ceef0a7a5caadd477fdff *R/CV.R
 156ca9bca006bf8e452444c917a59f85 *R/anyReps.R
 e30c22880233cc515acb8c783be54f84 *R/calcCorOneObs.R
@@ -18,7 +18,7 @@ dffbdfe0d702ce8123fd3587cb23bb20 *R/gpObs.R
 0e96cee391f43a21d2e5c384db387f0d *R/is.gp.R
 1e7cb49960829363fd31cbbbc1a1fd0d *R/is.gp.list.R
 020c1c214bdc656837694d70b83b3b4c *R/matchIndexes.R
-7e65d511147753da3b5d3e49bc565f1d *R/mlegp.R
+f55b139351ff91bbf8d01238e449f3cc *R/mlegp.R
 705dcc94ef4e806359ce5f1d0035c481 *R/mlegp2.R
 8965b74a74258f0265f517be29c4c1c6 *R/numSingularValues.R
 78ab2272a93e58ece438c8020b883fbb *R/pcweights.R
@@ -41,10 +41,12 @@ d52fef5ded638ed60e26709c64a49f12 *R/singularValueImportance.R
 d1f3d8e9d5c2ac80c7da75e5058682b4 *R/toParamIndexes.R
 cef3a742b77a3c4c3c16854c696d29e7 *R/uniqueSummary.R
 bd2d3cedf147450e58191c7a8fb86269 *R/varPerReps.R
-d525a563b8d9aa0e5ddc30761fb7aad0 *inst/doc/mlegp.pdf
-c048cb3a4aa1037239dfaa09160d5fb7 *inst/vignettes/mlegp.Rnw
+5017c29fe3e14fc2a23de7fe98412723 *build/vignette.rds
+b4d45d1e19ce5662e6825ccd15fc371a *inst/doc/mlegp.R
+c048cb3a4aa1037239dfaa09160d5fb7 *inst/doc/mlegp.Rnw
+0189861b61ad87c9ec629f838c46421b *inst/doc/mlegp.pdf
 c97d4545a22710f14fd8b0a5ca8bd5af *man/CV.Rd
-979f171a4dbee731f66c34d42efbb7b3 *man/createGP.Rd
+1c7a873cb73e166672171cf1e3a7e5ec *man/createGP.Rd
 f5ad58944a06bb94450caee91d977702 *man/createWindow.Rd
 29d9376ad0a744b502b13a86ad5270ad *man/gp.list.Rd
 f406ef38b1afe388253d281885182995 *man/is.gp.Rd
@@ -52,7 +54,7 @@ da534dc25c49825e08a7c3db72b099e3 *man/mlegp-internal.Rd
 cab039b4245ac50afe16f3cdf83343ff *man/mlegp-naming-functions.Rd
 e6a03676bd3ffe0ede83399052ebbb0e *man/mlegp-package.Rd
 9848c4c16b8bca7731cda574f8f60b70 *man/mlegp-svd-functions.Rd
-e765e7774a5263942c596772681f2ce7 *man/mlegp.Rd
+473c3668314e8e852c2f109b2f748e5e *man/mlegp.Rd
 15f70bc0ca6116ecb3814f3ae1e1977d *man/nugget.Rd
 9adb4eb86db5dc54fb349892e4d7c06e *man/paramLookup.Rd
 c2cb55a8865b4fbf0f8b4cde7bfb5661 *man/plot.gp.Rd
@@ -78,7 +80,9 @@ dad34c601b51ed419c23831e23a35408 *src/lapack_headers.h
 68175f87fb8e3d75163a72296429c50f *src/lbfgs.h
 915ea88db071910e977700ce1cb4a6ea *src/matrix_vector.h
 a35f135b563e10d358df115973d42fca *src/mlegp.c
-d0ef328eb7fb062fdd9f74d3605be480 *src/nelder_mead_min.c
+f9a0a9cb955e21f323747438caffc294 *src/mlegp_init.c
+fb12fa66dd0194aab321eb7b6f294d32 *src/nelder_mead_min.c
 280b3bfa5f59e7d4d3ce7800a0785351 *src/nelder_mead_min.h
 ebe6eddd3d07aa25a4d3946d82bf7a48 *src/print.c
 6b7f48453f74e3840da459c3cb6988d0 *src/print.h
+c048cb3a4aa1037239dfaa09160d5fb7 *vignettes/mlegp.Rnw

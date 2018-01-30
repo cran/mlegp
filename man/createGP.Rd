@@ -6,7 +6,7 @@
 }
 \usage{
 createGP(X, Z, beta, a, meanReg, sig2, nugget, 
-   param.names = 1:dim(X)[2], constantMean = 1)
+         param.names = 1:dim(X)[2], constantMean = 1)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

@@ -1,17 +1,18 @@
 \name{mlegp}
 \alias{mlegp}
 \alias{mlegp2}
+\alias{fitGPfromR}
 \title{ mlegp: maximum likelihood estimation of Gaussian process parameters }
 \description{
   Finds maximum likelihood estimates of Gaussian process parameters for a vector (or matrix) of one (or more) responses. For multiple responses, the user chooses between fitting independent Gaussian processes to the separate responses or fitting independent Gaussian processes to principle component weights obtained through singular value decomposition of the output. The latter is useful for functional output or data rich situations. 
 }
 \usage{
 mlegp(X, Z, constantMean = 1, nugget = NULL, nugget.known = 0, 
-        min.nugget = 0, param.names = NULL, gp.names = NULL, 
-	PC.UD = NULL, PC.num = NULL, PC.percent = NULL, 
-	simplex.ntries = 5, simplex.maxiter = 500, simplex.reltol = 1e-8,  
-	BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, seed = 0, 
-        verbose = 1, parallel = FALSE)
+      min.nugget = 0, param.names = NULL, gp.names = NULL, 
+	  PC.UD = NULL, PC.num = NULL, PC.percent = NULL, 
+	  simplex.ntries = 5, simplex.maxiter = 500, simplex.reltol = 1e-8,  
+	  BFGS.maxiter = 500, BFGS.tol = 0.01, BFGS.h = 1e-10, seed = 0, 
+      verbose = 1, parallel = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

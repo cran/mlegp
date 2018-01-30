@@ -177,8 +177,8 @@ void nelder_mead_min(int n, double *Bvec, double *X, double *Fmin,
 
 	    if (VH <= VL + convtol || VL <= abstol) break;
 
-	    sprintf(tstr, "%5d", funcount);
-	    if (trace)printout("%s%s %f %f\n", action, tstr, VH, VL);
+	    //sprintf(tstr, "%5d", funcount);
+	    //if (trace)printout("%s%s %f %f\n", action, tstr, VH, VL);
 
 	    for (i = 0; i < n; i++) {
 		temp = -P[i][H - 1];

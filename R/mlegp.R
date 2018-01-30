@@ -134,10 +134,14 @@ function(X, Z, constantMean = 1, nugget = NULL, nugget.known = 0, min.nugget = 0
 	}
 
 	if (parallel) {
-		cat("fitting "); cat(length(Zlist)); cat(" GPs in parallel mode...\n")
-		l = sfLapply(Zlist, mlegp2, XX=X, orig.XX = orig.X, nugget = nugget, nugget.known = nugget.known, reps = reps, un.sum = un.sum, numEstimates = numEstimates,constantMean=constantMean, simplex.ntries = simplex.ntries, simplex.maxiter = simplex.maxiter, simplex.reltol = simplex.reltol, BFGS.maxiter = BFGS.maxiter, BFGS.tol = BFGS.tol, BFGS.h = BFGS.h, min.nugget = min.nugget, verbose = verbose, param.names = param.names)
-		cat("...done\n") 
-	}
+        if (requireNamespace("snowfall", quietly = TRUE)) {
+    		cat("fitting "); cat(length(Zlist)); cat(" GPs in parallel mode...\n")
+	    	l = snowfall::sfLapply(Zlist, mlegp2, XX=X, orig.XX = orig.X, nugget = nugget, nugget.known = nugget.known, reps = reps, un.sum = un.sum, numEstimates = numEstimates,constantMean=constantMean, simplex.ntries = simplex.ntries, simplex.maxiter = simplex.maxiter, simplex.reltol = simplex.reltol, BFGS.maxiter = BFGS.maxiter, BFGS.tol = BFGS.tol, BFGS.h = BFGS.h, min.nugget = min.nugget, verbose = verbose, param.names = param.names)
+		    cat("...done\n") 
+        } else {
+            cat("Error: the package \"snowfall\" is required when parallel = TRUE")
+	    }
+    }
 	if (numGPs == 1) {
 		return (l[[1]])
 	}
