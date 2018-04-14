@@ -11,6 +11,7 @@
 #include "fit_gp.h"
 #include "print.h"
 
+/******
 int main() {
 
 int i;
@@ -71,7 +72,6 @@ int nugget_known = 1;
 //int reps = 3;
 double MSA = 2.5;
 double MSE = 0.5;
-/***
 fitGP(X, nrowsX, ncolsX, Y, nrowsY,  
 	constantMean, 
 	numSimplexTries, 
@@ -79,7 +79,6 @@ fitGP(X, nrowsX, ncolsX, Y, nrowsY,
 	simplex_abstol, simplex_reltol,  
 	BFGS_max_iter, BFGS_tol, BFGS_h, rng_seed,
 	nugget, nugget_length,  min_nugget, estimates, verbose, nugget_known, reps, MSA, MSE);
-***/
 FREE_MATRIX(C);
 FREE_MATRIX(X);
 FREE_VECTOR(estimates);
@@ -88,6 +87,6 @@ return 0;
 
 }
 
-
+*****/
 
 

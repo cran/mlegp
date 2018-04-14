@@ -83,7 +83,7 @@ void nelder_mead_min(int n, double *Bvec, double *X, double *Fmin,
     double oldsize;
     double **P;
     double size, step, temp, trystep;
-    char tstr[6];
+    //char tstr[6];
     double VH, VL, VR;
 
     if (maxit <= 0) {

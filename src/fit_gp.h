@@ -465,7 +465,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	gp.verbose = verbose;
 	gp.estimateNugget = 1;
 	if (nugget_length < 1) gp.estimateNugget = 0;  // we are NOT estimating nugget
-	if (nugget_known == 1 | nugget_known == 9) gp.estimateNugget = 0;  // we are NOT estimating nugget
+	if ( (nugget_known == 1) || (nugget_known == 9)) gp.estimateNugget = 0;  // we are NOT estimating nugget
 	gp.nugget_known = nugget_known;
 	gp.min_nugget = min_nugget;
 
@@ -486,7 +486,7 @@ int fitGP(const double *X, const int nrowsX, const int ncolsX,
 	double *v;
 	int v_length = ncolsX;       // for correlation parameter estimates
 
-	if (gp.estimateNugget == 1 | gp.nugget_known == 1) v_length++; // either for nugget or sig2   
+	if ((gp.estimateNugget == 1) || (gp.nugget_known == 1)) v_length++; // either for nugget or sig2   
 
 	v = VECTOR(v_length);  
 
@@ -559,7 +559,7 @@ if (1) {   /// MAXIMIZATION PROCEDURE
 		//printVector("%2.3f", v, v_length);
 	
 		//printout("evaluate...\n");
-		double ans = -f_min(v_length, v, &gp);
+		//double ans = -f_min(v_length, v, &gp);
 		//printout("...done, -loglike = %f\n", ans);
 
 		int fail = 0;
