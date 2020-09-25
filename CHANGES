@@ -1,3 +1,6 @@
+3.1.7 (09/22/2020)
+Updated reference URL and use 'return()' instead of 'return'
+
 3.1.4 (11/9/2013)
 Updated contact info
 
@@ -13,7 +16,7 @@ Updated contact info
 3.1.0 (7/27/2009)
 User can now specify nugget matrix exactly; when replicate runs are available, mlegp can fit a GP to sample means and use a plug-in estimate for the nugget, unless a nugget matrix is specified. 
 
-Because package adapt is archived, all SA functions have been removed. A full version of mlegp, which includes SA functionality, is available from http://users.nsula.edu/dancikg/mlegp.
+Because package adapt is archived, all SA functions have been removed. A full version of mlegp, which includes SA functionality, is available from by e-mailing dancikg@easternct.edu.
 
 2.2.6 (2/25/2009)
 No changes to mlegp functionality; Changed PKG_LIBS in Makevars.win 
