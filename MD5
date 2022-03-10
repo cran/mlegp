@@ -1,6 +1,6 @@
 9a9ff5ec5607fa5f8c7d026183350768 *CHANGES
-3f6140de0a7a3f13bc935db8944c3ca5 *DESCRIPTION
-1e6b2a1567eeca769467eaed62974e57 *NAMESPACE
+7dfc7974f5f7ac91159d690d83eee1b9 *DESCRIPTION
+73c80ed9e5d3c6268257e85ae21c8c6c *NAMESPACE
 9f1ac7cc2f5ceef0a7a5caadd477fdff *R/CV.R
 156ca9bca006bf8e452444c917a59f85 *R/anyReps.R
 e30c22880233cc515acb8c783be54f84 *R/calcCorOneObs.R
@@ -18,7 +18,7 @@ dffbdfe0d702ce8123fd3587cb23bb20 *R/gpObs.R
 0e96cee391f43a21d2e5c384db387f0d *R/is.gp.R
 1e7cb49960829363fd31cbbbc1a1fd0d *R/is.gp.list.R
 020c1c214bdc656837694d70b83b3b4c *R/matchIndexes.R
-483fb7c51ab008990b5c2a03f5dfc46e *R/mlegp.R
+dd875eee0d3143ae7fe54bb01fe1fb71 *R/mlegp.R
 f4ad2e7659f307411a7a047622ab7083 *R/mlegp2.R
 8965b74a74258f0265f517be29c4c1c6 *R/numSingularValues.R
 78ab2272a93e58ece438c8020b883fbb *R/pcweights.R
@@ -41,7 +41,6 @@ d52fef5ded638ed60e26709c64a49f12 *R/singularValueImportance.R
 d1f3d8e9d5c2ac80c7da75e5058682b4 *R/toParamIndexes.R
 cef3a742b77a3c4c3c16854c696d29e7 *R/uniqueSummary.R
 bd2d3cedf147450e58191c7a8fb86269 *R/varPerReps.R
-5017c29fe3e14fc2a23de7fe98412723 *build/vignette.rds
 e6abeb0d74bfc4666cf63ff3a71b2562 *inst/CITATION
 b4d45d1e19ce5662e6825ccd15fc371a *inst/doc/mlegp.R
 c048cb3a4aa1037239dfaa09160d5fb7 *inst/doc/mlegp.Rnw
