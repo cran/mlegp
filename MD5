@@ -1,5 +1,5 @@
-9a9ff5ec5607fa5f8c7d026183350768 *CHANGES
-7dfc7974f5f7ac91159d690d83eee1b9 *DESCRIPTION
+814e644f46febd76149e7c992e2d0705 *CHANGES
+74c90cc8e2ca9aeb4ba28ecfac004192 *DESCRIPTION
 73c80ed9e5d3c6268257e85ae21c8c6c *NAMESPACE
 9f1ac7cc2f5ceef0a7a5caadd477fdff *R/CV.R
 156ca9bca006bf8e452444c917a59f85 *R/anyReps.R
@@ -41,14 +41,15 @@ d52fef5ded638ed60e26709c64a49f12 *R/singularValueImportance.R
 d1f3d8e9d5c2ac80c7da75e5058682b4 *R/toParamIndexes.R
 cef3a742b77a3c4c3c16854c696d29e7 *R/uniqueSummary.R
 bd2d3cedf147450e58191c7a8fb86269 *R/varPerReps.R
-e6abeb0d74bfc4666cf63ff3a71b2562 *inst/CITATION
+390cd4c5efb98e7748aa8fa5a30b83e4 *build/vignette.rds
+5fecacb299cb8a0c9c86f43cd193c063 *inst/CITATION
 b4d45d1e19ce5662e6825ccd15fc371a *inst/doc/mlegp.R
-c048cb3a4aa1037239dfaa09160d5fb7 *inst/doc/mlegp.Rnw
-1d919c8b458fbce3fc6717cabd056377 *inst/doc/mlegp.pdf
+3b15bbb347f850ff1354ce3fad4482a3 *inst/doc/mlegp.Rnw
+df451d289289349339921618ba1192a0 *inst/doc/mlegp.pdf
 a0f0b06c45537e164035e76026a0577b *man/CV.Rd
 0e5f254e68923fc3d39178cc8fe992a6 *man/createGP.Rd
 6b725afce0b6ee8e3c4c9e453c748892 *man/createWindow.Rd
-60e51f2dcbf549de82ef5ac18db1cbad *man/gp.list.Rd
+4bf3d1eaf25dac9eaaa949774cc3c0a6 *man/gp.list.Rd
 c3180ee1255ba91c53f3df07ce700609 *man/is.gp.Rd
 bdb3cd806ebc2f54c48b1b825d4de462 *man/mlegp-internal.Rd
 095d352a40b34362ec2d708ee0409245 *man/mlegp-naming-functions.Rd
@@ -85,4 +86,4 @@ f9a0a9cb955e21f323747438caffc294 *src/mlegp_init.c
 280b3bfa5f59e7d4d3ce7800a0785351 *src/nelder_mead_min.h
 ebe6eddd3d07aa25a4d3946d82bf7a48 *src/print.c
 6b7f48453f74e3840da459c3cb6988d0 *src/print.h
-c048cb3a4aa1037239dfaa09160d5fb7 *vignettes/mlegp.Rnw
+3b15bbb347f850ff1354ce3fad4482a3 *vignettes/mlegp.Rnw
